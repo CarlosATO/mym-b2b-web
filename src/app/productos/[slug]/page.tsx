@@ -1,7 +1,20 @@
 import PublicLayout from '@/components/layout/PublicLayout';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { getPublicProductBySlug } from '@/lib/api/catalog';
 
-export default function ProductDetailPage({ params }: { params: { slug: string } }) {
+// Si usas generateStaticParams o similar, puedes configurarlo aquí.
+// Por ahora, asumimos SSR/dinámico para B2B.
+export const dynamic = 'force-dynamic';
+
+export default async function ProductDetailPage({ params }: { params: { slug: string } }) {
+  const { slug } = await params;
+  const product = await getPublicProductBySlug(slug);
+
+  if (!product) {
+    notFound();
+  }
+
   return (
     <PublicLayout>
       <div className="container mx-auto px-4 py-8">
@@ -14,29 +27,32 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* Imagen del producto */}
-            <div className="p-8 bg-slate-50 flex items-center justify-center min-h-[400px]">
-              <div className="text-slate-400 font-medium">
-                Imagen de {params.slug}
-              </div>
+            <div className="p-8 bg-slate-50 flex items-center justify-center min-h-[400px] relative">
+              {product.primary_image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={product.primary_image_url} alt={product.name} className="object-contain w-full h-full max-h-[400px]" />
+              ) : (
+                <div className="text-slate-400 font-medium">
+                  Sin imagen disponible
+                </div>
+              )}
             </div>
             
             {/* Detalles del producto */}
             <div className="p-8 md:p-12 flex flex-col">
-              <div className="text-sm font-medium text-blue-600 mb-2">Marca de Ejemplo</div>
+              {product.brand_id && <div className="text-sm font-medium text-blue-600 mb-2">Marca ID: {product.brand_id}</div>}
               <h1 className="text-3xl font-bold text-slate-900 mb-4">
-                Producto de Ejemplo ({params.slug})
+                {product.name}
               </h1>
-              <div className="text-sm text-slate-500 mb-6">Categoría: Ejemplo</div>
+              {product.category_id && <div className="text-sm text-slate-500 mb-6">Categoría ID: {product.category_id}</div>}
               
               <div className="prose prose-sm text-slate-600 mb-8">
                 <p>
-                  Esta es una descripción detallada del producto. Aquí se mostrarían las características principales, 
-                  especificaciones técnicas y cualquier otra información relevante para el cliente B2B.
+                  {product.description || product.short_description || 'Sin descripción detallada.'}
                 </p>
                 <ul>
-                  <li>Característica 1</li>
-                  <li>Característica 2</li>
-                  <li>SKU: MOCK-12345</li>
+                  {product.sku && <li>SKU: {product.sku}</li>}
+                  {product.pack_unit && <li>Unidad de empaque: {product.pack_unit}</li>}
                 </ul>
               </div>
               

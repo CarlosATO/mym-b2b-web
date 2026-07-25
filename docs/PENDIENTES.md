@@ -4,18 +4,15 @@
 - [x] Fase 1: schema web_b2b creado en Supabase real con RLS deny-by-default.
 - [x] Fase 2: Creación local de archivo de migración con policies, vistas y funciones helper (`202607_web_b2b_access_policies.sql`).
 - [x] Fase 2: Ejecución de migración de policies RLS en Supabase real (RPC públicas y roles).
-- [x] Revisar detalladamente la migración SQL (`202607_web_b2b_initial_schema.sql`).
-- [x] Ejecutar migración SQL en la base de datos Supabase (solo tras aprobación).
-- [x] Conectar variables reales de Supabase en `.env.local` (excluido de Git).
-- [x] Configurar credenciales reales de Bsale.
+- [x] Fase 3: Obtener MYM_COMPANY_ID e insertar primer WEB_SUPER_ADMIN de forma controlada.
+- [x] Fase 3.1: Conectar frontend público a RPCs de catálogo usando Supabase client server-side.
+- [x] Fase 3.1: Configurar validación de `web_b2b.admin_access` en `/admin` de forma segura.
 
 ## Próximos Pasos Inmediatos
-- [ ] Obtener MYM_COMPANY_ID real desde core.companies.
-- [ ] Insertar primer WEB_SUPER_ADMIN de forma controlada.
-- [ ] Conectar frontend público a RPCs de catálogo.
-- [ ] Preparar carga mínima de datos de prueba.
-- [ ] Diseñar estrategia de importación desde Bsale.
-- [ ] Diseñar estrategia de imágenes desde WooCommerce/Storage.
+- [ ] Implementar enforcement técnico real de MFA (nivel AAL) para cuentas administrativas.
+- [ ] Preparar carga mínima de datos de catálogo B2B (productos, categorías, marcas).
+- [ ] Diseñar estrategia de importación masiva desde Bsale (sincronización).
+- [ ] Diseñar estrategia de procesamiento y migración de imágenes desde WooCommerce hacia Supabase Storage.
 
 ## Tareas Restantes de Migración e Integración
 - [ ] Revisar la integración existente de Bsale en el ERP para estandarizar modelos.
