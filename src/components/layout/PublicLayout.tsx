@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import AuthNav from './AuthNav';
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -36,12 +37,7 @@ export default function PublicLayout({ children }: PublicLayoutProps) {
           </div>
           
           <div>
-            <Link 
-              href="/login" 
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
-            >
-              Iniciar sesión
-            </Link>
+            <AuthNav />
           </div>
         </div>
       </header>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentWebAdminAccess } from '@/lib/api/admin-access';
 import { createClient } from '@/lib/supabase/server';
+import { logout } from '@/app/actions/auth';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -72,11 +73,22 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {/* Top Header Admin */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-800">Administración</h2>
-          <div className="flex items-center gap-4">
-            <div className="text-sm font-medium text-slate-600">{adminAccess.role}</div>
-            <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
-              {user.email ? user.email.charAt(0).toUpperCase() : 'A'}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+              <div className="text-sm font-medium text-slate-600">{adminAccess.role}</div>
+              <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
+                {user.email ? user.email.charAt(0).toUpperCase() : 'A'}
+              </div>
             </div>
+            
+            <form action={logout}>
+              <button 
+                type="submit" 
+                className="text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors border-l border-slate-200 pl-6"
+              >
+                Cerrar sesión
+              </button>
+            </form>
           </div>
         </header>
         

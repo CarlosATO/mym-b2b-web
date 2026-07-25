@@ -7,6 +7,7 @@
 - [x] Fase 3: Obtener MYM_COMPANY_ID e insertar primer WEB_SUPER_ADMIN de forma controlada.
 - [x] Fase 3.1: Conectar frontend público a RPCs de catálogo usando Supabase client server-side.
 - [x] Fase 3.1: Configurar validación de `web_b2b.admin_access` en `/admin` de forma segura.
+- [x] Fase 3.2: Implementar login real con Supabase Auth y Server Actions (SSR).
 
 ## Próximos Pasos Inmediatos
 - [ ] Implementar enforcement técnico real de MFA (nivel AAL) para cuentas administrativas.
@@ -20,7 +21,6 @@
 - [ ] Descargar imágenes de WooCommerce (modo lectura).
 - [ ] Mapear SKUs con imágenes.
 - [ ] Subir imágenes al nuevo Supabase Storage.
-- [ ] Implementar lógica completa de inicio de sesión (SSR).
 - [ ] Implementar middleware y Higher Order Components para validación de roles de Admin.
 - [ ] Implementar las pantallas reales del panel admin con mutaciones Server Actions.
 - [ ] Preparar el despliegue en entorno de Staging (e.g., Railway o Vercel).
