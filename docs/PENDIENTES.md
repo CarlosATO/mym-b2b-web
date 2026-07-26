@@ -9,11 +9,22 @@
 - [x] Fase 3.1: Configurar validación de `web_b2b.admin_access` en `/admin` de forma segura.
 - [x] Fase 3.2: Implementar login real con Supabase Auth y Server Actions (SSR).
 - [x] Fase 4: Preparar y ejecutar carga mínima de datos de catálogo B2B de forma controlada (`202607_seed_demo_catalog_web_b2b.sql`).
+- [x] Fase 5: Rediseño visual hacia look comercial B2B (Mascotas/Distribuidora).
+- [x] Fase 6A.1: Creación y aplicación estructural en `web_b2b` usando `db query --linked` para soporte admin (columnas, índices, RPC paginada). No se modificaron datos reales.
 
 ## Próximos Pasos Inmediatos
-- [ ] Implementar enforcement técnico real de MFA (nivel AAL) para cuentas administrativas.
-- [ ] Diseñar estrategia de importación masiva desde Bsale (sincronización).
-- [ ] Diseñar estrategia de procesamiento y migración de imágenes desde WooCommerce hacia Supabase Storage.
+- [ ] Fase 6B: Desarrollar CRUD de Categorías y Marcas en Panel Admin.
+- [ ] Fase 6C: Desarrollar CRUD de Productos (sin sync real).
+- [ ] Fase 6D: Integrar Storage seguro de imágenes.
+- [ ] Fase 7: Importación WooCommerce/cPanel + cruce Bsale (solo revisión, no crear en Bsale).
+- [ ] Fase 8: Sincronización real Bsale stock/precios.
+
+## Notas Arquitectónicas Clave (Aprobadas en Fase 6)
+- **Bsale es fuente oficial de stock, pero la web pública lee de Supabase.** No hay consultas en tiempo real de Bsale por cada visita pública.
+- **El catálogo público debe ser paginado** mediante la nueva RPC `get_public_catalog_products_paginated`.
+- **Imágenes finales** deben servirse desde Supabase Storage o CDN (prohibido hotlinking a WordPress).
+- **El panel admin escribirá vía RPCs controladas** (SECURITY DEFINER, public schema temporal, auditoría).
+- **Importación WooCommerce** requerirá validación de imágenes y cruce por SKU.
 
 ## Tareas Restantes de Migración e Integración
 - [ ] Revisar la integración existente de Bsale en el ERP para estandarizar modelos.

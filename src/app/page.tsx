@@ -1,89 +1,113 @@
 import PublicLayout from '@/components/layout/PublicLayout';
+import ProductCard from '@/components/catalog/ProductCard';
 import Link from 'next/link';
-import { getPublicBanners, getPublicCatalogProducts } from '@/lib/api/catalog';
+import { getPublicCatalogProducts } from '@/lib/api/catalog';
+import HomeHero from '@/components/home/HomeHero';
+import PromoCarousel from '@/components/home/PromoCarousel';
+import PetCategorySection from '@/components/home/PetCategorySection';
+
+export const metadata = {
+  title: 'MYM Distribuidora — Portal B2B Mayorista Mascotas',
+  description: 'Portal de compras mayoristas exclusivo para clientes registrados del rubro mascotas.',
+};
+
+type Product = {
+  id: string; slug: string; name: string; brand_name?: string;
+  category_name?: string; short_description?: string;
+  primary_image_url?: string; is_featured?: boolean;
+};
 
 export default async function Home() {
-  const banners = await getPublicBanners();
-  const products = await getPublicCatalogProducts();
+  const [products] = await Promise.all([
+    getPublicCatalogProducts(),
+  ]);
 
-  // En el MVP sin datos, aseguramos que siempre haya algo que mostrar o manejamos el estado vacío elegantemente.
-  // Podríamos filtrar `products.filter(p => p.is_featured)` si el schema tuviera esa columna implementada con datos.
-  const featuredProducts = products.slice(0, 4);
+  const typedProducts = products as Product[];
+  const displayedProducts = typedProducts.slice(0, 8); // Just show a few as "Destacados"
+
+  const catCategories = [
+    { title: 'Alimentos Secos', icon: '🥣' },
+    { title: 'Alimentos Húmedos', icon: '🥫' },
+    { title: 'Snacks', icon: '🐟' },
+    { title: 'Arenas Sanitarias', icon: '🪨' },
+    { title: 'Accesorios', icon: '🧶' },
+  ];
+
+  const dogCategories = [
+    { title: 'Alimentos Secos', icon: '🥣' },
+    { title: 'Alimentos Húmedos', icon: '🥫' },
+    { title: 'Snacks y Huesos', icon: '🦴' },
+    { title: 'Higiene', icon: '🧴' },
+    { title: 'Accesorios', icon: '🦮' },
+  ];
 
   return (
     <PublicLayout>
-      {/* Banners Hero Section */}
-      {banners.length > 0 ? (
-        <div className="w-full bg-slate-900 text-white min-h-[40vh] flex items-center justify-center">
-          {/* Aquí iría un carrusel real con banners. Por ahora mostramos el primero */}
-          <div className="text-center px-4">
-            <h2 className="text-3xl font-bold mb-4">{banners[0].title}</h2>
-            {banners[0].link_url && (
-              <Link href={banners[0].link_url} className="text-blue-400 hover:underline">
-                Ver más
-              </Link>
-            )}
+      {/* Hero Comercial */}
+      <HomeHero />
+
+      {/* Ofertas Inmediatas */}
+      <PromoCarousel />
+
+      {/* Tienda Gatos */}
+      <PetCategorySection title="Tienda para Gatos" type="gatos" categories={catCategories} />
+
+      {/* Tienda Perros */}
+      <PetCategorySection title="Tienda para Perros" type="perros" categories={dogCategories} />
+
+      {/* Catálogo B2B / Destacados */}
+      <section className="py-16 bg-white border-t border-slate-200">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-8 gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Productos Destacados</h2>
+              <p className="text-slate-500 text-sm mt-1">Selección de nuestro catálogo mayorista</p>
+            </div>
+            <Link href="/catalogo" className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:text-blue-900 transition-colors bg-white px-4 py-2 border border-slate-200 rounded-lg hover:border-blue-300 shadow-sm">
+              Ver catálogo completo →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {displayedProducts.map((p) => <ProductCard key={p.id} {...p} />)}
           </div>
         </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4 bg-slate-50">
-          <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-6">
-            Catálogo Mayorista
-          </h1>
-          <p className="text-lg md:text-xl text-slate-600 max-w-2xl mb-10">
-            Encuentra los mejores productos para tu negocio. Regístrate para acceder a precios exclusivos y gestionar tus compras de manera eficiente.
+      </section>
+
+      {/* Beneficios B2B */}
+      <section className="py-12 bg-slate-900 text-white border-t border-slate-800">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-slate-700">
+            {[
+              { icon: '📦', title: 'Catálogo mayorista', desc: 'Surtido completo en stock real.' },
+              { icon: '🔒', title: 'Acceso exclusivo', desc: 'Precios preferenciales B2B.' },
+              { icon: '🚚', title: 'Despacho rápido', desc: 'Entregas a tu local comercial.' },
+            ].map((b, i) => (
+              <div key={i} className="pt-6 md:pt-0 px-4">
+                <div className="text-3xl mb-3">{b.icon}</div>
+                <h3 className="font-semibold text-white mb-1">{b.title}</h3>
+                <p className="text-sm text-slate-400">{b.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Final */}
+      <section className="py-16 bg-blue-50">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-2xl font-bold mb-2 text-slate-900">¿Tienes un Pet Shop o Veterinaria?</h2>
+          <p className="text-slate-600 mb-6 text-sm max-w-md mx-auto">
+            Únete a MYM Distribuidora y accede a las mejores marcas del mercado con condiciones exclusivas para mayoristas.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link 
-              href="/catalogo" 
-              className="px-8 py-3 text-base font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
-            >
-              Ver Catálogo
-            </Link>
-            <Link 
-              href="/login" 
-              className="px-8 py-3 text-base font-medium text-blue-600 bg-white border border-blue-600 rounded-md hover:bg-blue-50 transition-colors shadow-sm"
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-blue-700 text-white font-bold rounded-lg hover:bg-blue-800 transition-colors shadow-md text-sm"
             >
               Iniciar Sesión
             </Link>
           </div>
-        </div>
-      )}
-      
-      {/* Sección de Productos Destacados */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-8">Productos Destacados</h2>
-          
-          {featuredProducts.length === 0 ? (
-            <div className="text-center py-12 bg-slate-50 rounded-lg border border-slate-100">
-              <p className="text-slate-500">Pronto tendremos productos disponibles.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {featuredProducts.map((product: { id: string; slug: string; name: string; primary_image_url?: string; short_description?: string }) => (
-                <Link href={`/productos/${product.slug}`} key={product.id} className="group border border-slate-200 rounded-lg p-4 flex flex-col hover:shadow-md transition-shadow">
-                  <div className="aspect-square bg-slate-100 rounded-md mb-4 flex items-center justify-center text-slate-400 overflow-hidden relative">
-                    {product.primary_image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={product.primary_image_url} alt={product.name} className="object-cover w-full h-full" />
-                    ) : (
-                      <span className="text-sm">Sin imagen</span>
-                    )}
-                  </div>
-                  <h3 className="font-semibold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors line-clamp-1">{product.name}</h3>
-                  <p className="text-sm text-slate-500 mb-4 line-clamp-2">
-                    {product.short_description || 'Sin descripción disponible.'}
-                  </p>
-                  <div className="mt-auto">
-                    <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                      Inicia sesión para ver precios
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
       </section>
     </PublicLayout>
