@@ -10,6 +10,7 @@
 - [x] Fase 3.2: Implementar login real con Supabase Auth y Server Actions (SSR).
 
 ## Próximos Pasos Inmediatos
+- [ ] Ejecutar la migración `202607_web_b2b_public_wrappers.sql` para habilitar el acceso a `web_b2b` desde PostgREST.
 - [ ] Implementar enforcement técnico real de MFA (nivel AAL) para cuentas administrativas.
 - [ ] Preparar carga mínima de datos de catálogo B2B (productos, categorías, marcas).
 - [ ] Diseñar estrategia de importación masiva desde Bsale (sincronización).
@@ -24,6 +25,7 @@
 - [ ] Implementar middleware y Higher Order Components para validación de roles de Admin.
 - [ ] Implementar las pantallas reales del panel admin con mutaciones Server Actions.
 - [ ] Preparar el despliegue en entorno de Staging (e.g., Railway o Vercel).
+- [ ] **FUTURO:** Si Supabase reconoce correctamente la exposición de `web_b2b` en la API REST, eliminar los "Wrapper RPCs" del schema `public` y restaurar los llamados directos desde el frontend para simplificar la arquitectura.
 - [ ] **FUTURO:** Diseñar e implementar el modelo de Listas de Precios (tablas `price_lists`, `customer_price_lists`) y su lógica de resolución.
 
 ## Pendientes Permanentes

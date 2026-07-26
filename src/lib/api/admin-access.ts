@@ -27,14 +27,9 @@ export async function getWebAdminAccessForUser({
     companyId,
   });
 
-  // Consulta respetando RLS
+  // Consulta usando el wrapper público para evadir el bloqueo de PGRST106
   const { data, error } = await supabase
-    .schema('web_b2b')
-    .from('admin_access')
-    .select('role, company_id, is_active, mfa_required')
-    .eq('user_id', userId)
-    .eq('company_id', companyId)
-    .eq('is_active', true)
+    .rpc('web_b2b_get_current_admin_access', { target_company_id: companyId })
     .maybeSingle();
 
   console.log('[DEBUG AUTH] Resultado de la query:', {
@@ -47,11 +42,13 @@ export async function getWebAdminAccessForUser({
     return null;
   }
 
+  const adminData = data as AdminAccessInfo;
+
   return {
-    role: data.role,
-    company_id: data.company_id,
-    is_active: data.is_active,
-    mfa_required: data.mfa_required
+    role: adminData.role,
+    company_id: adminData.company_id,
+    is_active: adminData.is_active,
+    mfa_required: adminData.mfa_required
   };
 }
 
