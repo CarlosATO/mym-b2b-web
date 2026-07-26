@@ -8,11 +8,10 @@
 - [x] Fase 3.1: Conectar frontend público a RPCs de catálogo usando Supabase client server-side.
 - [x] Fase 3.1: Configurar validación de `web_b2b.admin_access` en `/admin` de forma segura.
 - [x] Fase 3.2: Implementar login real con Supabase Auth y Server Actions (SSR).
+- [x] Fase 4: Preparar y ejecutar carga mínima de datos de catálogo B2B de forma controlada (`202607_seed_demo_catalog_web_b2b.sql`).
 
 ## Próximos Pasos Inmediatos
-- [ ] Ejecutar la migración `202607_web_b2b_public_wrappers.sql` para habilitar el acceso a `web_b2b` desde PostgREST.
 - [ ] Implementar enforcement técnico real de MFA (nivel AAL) para cuentas administrativas.
-- [ ] Preparar carga mínima de datos de catálogo B2B (productos, categorías, marcas).
 - [ ] Diseñar estrategia de importación masiva desde Bsale (sincronización).
 - [ ] Diseñar estrategia de procesamiento y migración de imágenes desde WooCommerce hacia Supabase Storage.
 
