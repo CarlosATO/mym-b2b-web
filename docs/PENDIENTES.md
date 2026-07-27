@@ -12,9 +12,9 @@
 - [x] Fase 5: Rediseño visual hacia look comercial B2B (Mascotas/Distribuidora).
 - [x] Fase 6A.1: Creación y aplicación estructural en `web_b2b` usando `db query --linked` para soporte admin (columnas, índices, RPC paginada). No se modificaron datos reales.
 - [x] Fase 6B.1: Creación y aplicación estructural de RPCs seguras para Categorías y Marcas.
+- [x] Fase 6B.2: Frontend CRUD de Categorías y Marcas en Panel Admin.
 
 ## Próximos Pasos Inmediatos
-- [ ] Fase 6B.2: Frontend CRUD de Categorías y Marcas en Panel Admin.
 - [ ] Fase 6C: Desarrollar CRUD de Productos (sin sync real).
 - [ ] Fase 6D: Integrar Storage seguro de imágenes.
 - [ ] Fase 7: Importación WooCommerce/cPanel + cruce Bsale (solo revisión, no crear en Bsale).
