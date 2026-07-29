@@ -47,17 +47,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
             Dashboard
           </Link>
-          <Link href="/admin/banners" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
-            Banners
-          </Link>
           <Link href="/admin/productos" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
             Productos Web
           </Link>
-          <Link href="/admin/clientes" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
-            Clientes B2B
-          </Link>
           <Link href="/admin/categorias" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
             Categorías
+          </Link>
+          <Link href="/admin/marcas" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
+            Marcas
+          </Link>
+          <Link href="/admin/banners" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
+            Banners
+          </Link>
+          <Link href="/admin/clientes" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
+            Clientes B2B
           </Link>
           <Link href="/admin/configuracion" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
             Configuración
