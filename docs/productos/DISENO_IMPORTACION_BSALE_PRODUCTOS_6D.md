@@ -106,8 +106,14 @@ Se ha propuesto el modelo SQL base (sin aplicarlo todavía):
 - Permite la bandera de `mode` (`dry_run` o `apply`) para correr pruebas seguras sin alterar DB.
 - Todavía no se llama a Bsale. La visualización de este historial en el panel admin queda para fase posterior.
 
-## 10. Fases Propuestas Siguientes
+## 10. 6D.3A — Simulador local con fixtures
+Se ha implementado un simulador local en TypeScript (`src/lib/bsale-product-import/planner.ts` y scripts asociados).
+- **Aislamiento**: No llama a Bsale, no escribe en Supabase, y no crea productos reales.
+- **Validación Temprana**: Valida todas las reglas de cruce (SKU, bsaleVariantId, conflictos) antes de conectar la API real.
+- **Control de Riesgos**: El script `dry_run` local permite detectar conflictos estructurales usando fixtures de muestra, previniendo errores durante la ejecución real en Supabase.
 
-1. **6D.3**: Desarrollo de script de ingesta local que lea un payload de prueba o conecte con el endpoint controlado de Bsale (solo lectura).
-2. **6D.4**: Ejecución de importación con una muestra pequeña y validación de las reglas de upsert, conflictos y protección de datos comerciales.
+## 11. Fases Propuestas Siguientes
+
+1. **6D.3**: Desarrollo de script de ingesta local que conecte con el endpoint controlado de Bsale (solo lectura) usando la lógica validada en 6D.3A.
+2. **6D.4**: Ejecución de importación con una muestra pequeña y validación de las reglas de upsert, conflictos y protección de datos comerciales en DB de staging/local.
 3. **6E**: Script de una sola vez para volcado de imágenes desde la web actual hacia el Storage de Supabase.
