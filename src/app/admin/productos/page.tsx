@@ -66,13 +66,12 @@ export default async function AdminProductsPage({
             Los productos provienen de Bsale y aquí se administra su presentación web. Mostrando {totalCount} productos.
           </p>
         </div>
-        <span
-          className="inline-flex flex-shrink-0 items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-slate-400 cursor-not-allowed"
-          aria-disabled="true"
-          title="Próxima Fase"
+        <Link
+          href="/admin/productos/nuevo"
+          className="inline-flex flex-shrink-0 items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-slate-900 hover:bg-slate-800 transition-colors"
         >
-          Nuevo Producto (Próxima Fase)
-        </span>
+          Nuevo Producto
+        </Link>
       </div>
 
       <div className="bg-white shadow-sm border border-slate-200 rounded-lg overflow-hidden flex flex-col">
@@ -188,13 +187,12 @@ export default async function AdminProductsPage({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <span 
-                        className="text-slate-400 cursor-not-allowed"
-                        aria-disabled="true"
-                        title="Próxima fase"
+                      <Link 
+                        href={`/admin/productos/${product.id}/editar`} 
+                        className="text-blue-600 hover:text-blue-900"
                       >
                         Editar
-                      </span>
+                      </Link>
                     </td>
                   </tr>
                 ))}

@@ -192,3 +192,59 @@ export async function getAdminProducts(
 
   return data as AdminProduct[];
 }
+
+export async function getAdminProduct(
+  supabase: SupabaseClient,
+  companyId: string,
+  productId: string
+): Promise<AdminProduct | null> {
+  const { data, error } = await supabase.rpc('web_b2b_admin_get_product', {
+    p_target_company_id: companyId,
+    p_product_id: productId
+  });
+
+  if (error) {
+    console.error('Error fetching admin product:', error);
+    throw error;
+  }
+
+  if (!data || data.length === 0) return null;
+  return data[0] as AdminProduct;
+}
+
+export async function upsertAdminProduct(
+  supabase: SupabaseClient,
+  companyId: string,
+  product: Partial<AdminProduct> & { sku: string; name: string; slug: string }
+): Promise<string> {
+  const { data, error } = await supabase.rpc('web_b2b_admin_upsert_product', {
+    p_product_id: product.id || null,
+    p_target_company_id: companyId,
+    p_sku: product.sku,
+    p_name: product.name,
+    p_slug: product.slug,
+    p_short_description: product.short_description || null,
+    p_description: product.description || null,
+    p_brand_id: product.brand_id || null,
+    p_category_id: product.category_id || null,
+    p_is_active: product.is_active ?? false,
+    p_is_visible: product.is_visible ?? false,
+    p_is_featured: product.is_featured ?? false,
+    p_review_status: product.review_status || 'draft',
+    p_order_index: product.order_index ?? 0,
+    p_seo_title: product.seo_title || null,
+    p_seo_description: product.seo_description || null,
+    p_bsale_variant_id: product.bsale_variant_id || null,
+    p_bsale_sync_enabled: product.bsale_sync_enabled ?? false,
+    p_bsale_sync_status: product.bsale_sync_status || 'pending',
+    p_primary_image_url: product.primary_image_url || null
+  });
+
+  if (error) {
+    console.error('Error upserting admin product:', error);
+    throw error;
+  }
+
+  return data as string;
+}
+
