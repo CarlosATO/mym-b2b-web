@@ -99,7 +99,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </header>
         
         {/* Page Content */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-8 min-w-0">
           {adminAccess.mfa_required && (
             <div className="mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-md">
               <div className="flex">

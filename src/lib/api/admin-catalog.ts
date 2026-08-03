@@ -128,3 +128,67 @@ export async function upsertAdminBrand(
 
   return data as string;
 }
+
+// ----------------------------------------------------------------------
+// Funciones de Productos
+// ----------------------------------------------------------------------
+
+export interface AdminProduct {
+  id: string;
+  sku: string;
+  name: string;
+  slug: string;
+  short_description: string | null;
+  description: string | null;
+  brand_id: string | null;
+  brand_name: string | null;
+  category_id: string | null;
+  category_name: string | null;
+  is_active: boolean;
+  is_visible: boolean;
+  is_featured: boolean;
+  review_status: string;
+  order_index: number;
+  seo_title: string | null;
+  seo_description: string | null;
+  bsale_variant_id: string | null;
+  bsale_sync_enabled: boolean;
+  bsale_sync_status: string;
+  bsale_last_checked_at: string | null;
+  primary_image_url: string | null;
+  created_at: string;
+  updated_at: string;
+  total_count: number;
+}
+
+export interface GetAdminProductsParams {
+  search_query?: string | null;
+  filter_review_status?: string | null;
+  filter_category_id?: string | null;
+  filter_brand_id?: string | null;
+  page_size?: number;
+  page_number?: number;
+}
+
+export async function getAdminProducts(
+  supabase: SupabaseClient,
+  companyId: string,
+  params?: GetAdminProductsParams
+): Promise<AdminProduct[]> {
+  const { data, error } = await supabase.rpc('web_b2b_admin_list_products', {
+    p_target_company_id: companyId,
+    search_query: params?.search_query ?? null,
+    filter_review_status: params?.filter_review_status ?? null,
+    filter_category_id: params?.filter_category_id ?? null,
+    filter_brand_id: params?.filter_brand_id ?? null,
+    page_size: params?.page_size ?? 50,
+    page_number: params?.page_number ?? 1
+  });
+
+  if (error) {
+    console.error('Error fetching admin products:', error);
+    throw error;
+  }
+
+  return data as AdminProduct[];
+}
