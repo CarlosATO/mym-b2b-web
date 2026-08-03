@@ -117,3 +117,14 @@ Se ha implementado un simulador local en TypeScript (`src/lib/bsale-product-impo
 1. **6D.3**: Desarrollo de script de ingesta local que conecte con el endpoint controlado de Bsale (solo lectura) usando la lógica validada en 6D.3A.
 2. **6D.4**: Ejecución de importación con una muestra pequeña y validación de las reglas de upsert, conflictos y protección de datos comerciales en DB de staging/local.
 3. **6E**: Script de una sola vez para volcado de imágenes desde la web actual hacia el Storage de Supabase.
+
+### 6D.3B — Lectura real Bsale en dry-run
+Esta fase realiza una validación controlada para alimentar el planner con datos reales desde la API de Bsale.
+- **Solo GET/lectura**: Se usa el cliente Bsale preexistente de solo lectura (`bsaleFetch`) apuntando al endpoint de variantes de Bsale.
+- **Muestra Limitada**: La consulta está restringida mediante el parámetro `limit` (max 50) para no agotar recursos ni saturar el servidor local.
+- **Sin escritura en Supabase**: Los productos resultantes de Bsale se mapean en memoria local usando `bsale-mapper.ts` y pasan al `planner.ts`. No existe ejecución de escrituras SQL ni llamadas al Upsert de Supabase.
+- **Sin productos creados**: Garantizado por el flujo puro del planner local que solo devuelve `proposedChanges` sin mutar el catálogo real.
+- **Sin precios/stock procesados**: El mapper explícitamente anula precios y cantidades de inventario (`null`), confirmando la regla de negocio para etapas tempranas.
+- **Objetivo**: Validar el contrato real Bsale → planner local de forma totalmente aislada y segura antes de proceder a la inserción real de productos.
+
+- **Comparación Segura**: Se leen los productos web existentes exclusivamente mediante la RPC de sistema `public.web_b2b_system_list_products_for_import` utilizando la clave `service_role`. Esto protege el esquema y evita problemas de permisos sin requerir una sesión de usuario (`auth.uid()`). No se manipulan runs/items todavía.
