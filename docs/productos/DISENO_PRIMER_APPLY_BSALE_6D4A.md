@@ -1,0 +1,165 @@
+# Diseño del Primer Apply Controlado — Bsale → web_b2b.products (Fase 6D.4A)
+
+- **Estado**: SOLO DISEÑO. No se implementa ni ejecuta nada de este documento todavía.
+- **Fase**: 6D.4A (previa a 6D.4B migración/RPC, 6D.4C dry-run técnico, 6D.4D primer apply real).
+- **Base**: Fase 6D.3F cerrada (commit `e5c2d13`). Bsale reporta 3.591 variantes; muestra de 200 analizada (184 create / 16 skip / 0 conflicts / 0 errors); `web_b2b.products` con 4 productos (demo/TEST).
+
+## 1. Objetivo
+
+Ejecutar, en una fase posterior, la creación controlada de un máximo de **20 productos** en `web_b2b.products` a partir de items de una auditoría dry-run revisada visualmente en el panel admin. Los productos nacen en estado seguro: `review_status='draft'`, `is_active=false`, `is_visible=false`, `is_featured=false`, `bsale_sync_enabled=true`, `bsale_sync_status='pending'`. Sin precios, sin stock, sin imágenes, sin publicación pública, sin carrito, sin pagos, sin Storage.
+
+## 2. Criterio de selección del primer apply
+
+El primer apply toma como máximo 20 items desde **una única auditoría dry-run ya revisada visualmente** (recomendado: el run más reciente `success` aprobado por ID).
+
+Criterios obligatorios de selección de cada item:
+- `run.mode = 'dry_run'`
+- `run.status = 'success'`
+- `item.action = 'create'`
+- `item.status = 'pending'`
+- `item.conflict_type IS NULL`
+- `item.sku` no nulo
+- `item.bsale_variant_id` no nulo
+- `item.source_name` no nulo
+- No productos inactivos/skipped, no conflictos, no errores
+- Límite máximo 20 items
+
+Selección del run:
+- Usar el run más reciente validado visualmente, o
+- Un run específico aprobado por ID explícito (parámetro `import_run_id`).
+
+## 3. Validaciones previas al apply
+
+Antes de insertar cada producto:
+- El SKU no existe en `web_b2b.products` para el `company_id`.
+- El `bsale_variant_id` no existe en `web_b2b.products` para el `company_id`.
+- El `slug` generado no colisiona; si colisiona, usar sufijo controlado (`-1`, `-2`, ...).
+- `name`/`source_name` válido (no vacío).
+- `proposed_changes` del item NO contiene `price`/`stock`/`cost` (debe estar ya sanitizado).
+- `item.payload.dry_run = true` (el payload persistido debe marcar dry_run).
+- El run pertenece al `company_id`.
+- El run no ha sido aplicado antes (idempotencia, ver sección 4).
+
+## 4. Idempotencia y bloqueo (diseño)
+
+Opciones evaluadas:
+1. Columnas `applied_at` / `apply_run_id` en `bsale_product_import_runs` e items.
+2. Tabla de control ligera `web_b2b.bsale_product_apply_runs` (cabecera: id, import_run_id, company_id, status, applied_at, created_count, error_message) + `web_b2b.bsale_product_apply_items` (relación apply_run → import_item → product_id creado).
+3. Reutilizar las tablas de auditoría existentes con columnas adicionales.
+
+**Recomendación**: opción 2 (nueva tabla `web_b2b.bsale_product_apply_runs` + `apply_items`). Es la más segura y mantenible porque:
+- No mezcla el ciclo de vida del dry-run con el del apply.
+- Registra exactamente qué productos creó cada apply (trazabilidad).
+- Permite idempotencia por `import_run_id` único (índice único `(company_id, import_run_id)`).
+- Si falla a mitad de transacción, el rollback deja trazabilidad clara (nada persistido si se usa transacción; si hay modo parcial, un `status='failed'` en apply_runs con `error_message`).
+
+Requisitos de diseño:
+- Un run dry-run no puede aplicarse dos veces (bloqueo por índice único + check dentro de la RPC).
+- El apply registra qué productos creó.
+- Todo el apply se ejecuta en **una transacción** (BEGIN/COMMIT; ante error → ROLLBACK).
+- Si ocurre error, queda trazabilidad: apply_runs con `status='failed'` y `error_message` (solo si el diseño decide persistir el fallo fuera de la transacción; lo más simple y seguro: rollback total y el error llega como excepción de la RPC, sin estado intermedio).
+
+No se implementa SQL todavía; es diseño.
+
+## 5. RPC system propuesta (NO ejecutada)
+
+```
+public.web_b2b_system_apply_bsale_product_import_run(
+  target_company_id uuid,
+  import_run_id uuid,
+  max_items integer DEFAULT 20
+)
+```
+
+Características requeridas:
+- `SECURITY DEFINER`
+- `SET search_path = ''`
+- `GRANT EXECUTE` solo a `service_role`
+- Sin `auth.uid()`, sin `check_admin_access()`
+- Sin SQL dinámico
+- No acepta secretos
+- No toca precios/stock/imágenes
+- Inserta únicamente en `web_b2b.products` y tablas de control/auditoría de apply
+- Valida `max_items <= 20` en esta primera fase (rechazo controlado si se supera)
+- Ejecuta el criterio de selección de la sección 2 y las validaciones de la sección 3 dentro de la transacción
+
+## 6. Mapping exacto a web_b2b.products
+
+Desde `item`/auditoría (campos del RPC de apply):
+
+| Columna | Valor |
+|---|---|
+| company_id | target_company_id |
+| sku | item.sku |
+| bsale_variant_id | item.bsale_variant_id |
+| name | item.source_name |
+| slug | generado desde source_name (+ sufijo si colisiona; fallback con sku) |
+| short_description | null |
+| description | null |
+| category_id | null |
+| brand_id | null |
+| is_active | false |
+| is_visible | false |
+| is_featured | false |
+| review_status | 'draft' |
+| order_index | 0 |
+| seo_title | null |
+| seo_description | null |
+| bsale_sync_enabled | true |
+| bsale_sync_status | 'pending' |
+| bsale_last_checked_at | null (no se ha sincronizado operacionalmente aún; `now()` sería engañoso) |
+| created_at / updated_at | defaults de la tabla |
+
+No se inserta en `product_images`, `product_prices`, `product_stock`.
+
+## 7. Auditoría del apply
+
+Registrar:
+- run aplicado (import_run_id).
+- fecha de apply.
+- cantidad creada.
+- productos creados (IDs).
+- errores.
+- usuario/system que ejecutó (service_role; `started_by` o columna `applied_by` con 'system').
+- relación import_item → product_id creado.
+
+Forma propuesta:
+- `web_b2b.bsale_product_apply_runs(id, company_id, import_run_id, status, created_count, applied_at, error_message)`.
+- `web_b2b.bsale_product_apply_items(id, apply_run_id, import_item_id, product_id, sku)`.
+- Índice único `(company_id, import_run_id)` en apply_runs para idempotencia.
+
+## 8. Rollback conceptual
+
+- No habrá borrado automático masivo desde UI.
+- Si hay error posterior al apply:
+  - Marcar productos creados como `is_active=false` e `is_visible=false`.
+  - Mantener `review_status='draft'`.
+  - Eventualmente limpiar con SQL/script controlado usando IDs exactos (nunca por rango/filtro amplio).
+  - Nunca borrar sin revisión humana.
+
+## 9. Limpieza DEMO/TEST
+
+Productos actuales: DEMO-001, DEMO-002, DEMO-003, TEST-UI-001 (4 registros en `web_b2b.products`).
+- **No se eliminan en esta fase.**
+- Estrategia propuesta (a decidir en 6D.4B/6D.4C, una de las siguientes):
+  1. Mantenerlos inactivos/draft y excluirlos de vistas reales, o
+  2. Limpiarlos con SQL controlado (IDs exactos) antes del primer apply, o
+  3. Excluirlos explícitamente de la selección del apply por SKU.
+- La recomendación más conservadora para el primer apply: no borrar; marcar inactivo/no visible si estorban y excluirlos por SKU del apply.
+
+## 10. Riesgos
+
+- Importar demasiados productos sin categoría/marca/imagen (catálogo incompleto visualmente).
+- Duplicidad SKU no detectada por carrera (dos applies simultáneos) — mitigar con transacción + índices únicos.
+- Slugs colisionados — mitigar con sufijo controlado.
+- Diferencias entre variante Bsale y producto base (nombre/presentación) — mitigar con mapper ya corregido y revisión visual.
+- Productos inactivos en Bsale — ya excluidos por el planner (skip).
+- Imposibilidad de rollback automático si se borra mal — nunca borrar sin revisión; usar flags.
+- Mezcla con productos demo/test — excluir por SKU y/o limpiar controlado.
+
+## 11. Recomendación final
+
+- **NO aplicar aún.**
+- **6D.4B**: crear migración + RPC de apply controlado (borrador SQL en repositorio, sin ejecutar) + tablas de apply_runs/apply_items.
+- **6D.4C**: dry-run técnico del apply con transacción y ROLLBACK (verificar selección, mappings, idempotencia) sin persistir productos.
+- **6D.4D**: primer apply real con máximo 20 productos, tras revisión visual del run elegido y limpieza/decisión DEMO/TEST.

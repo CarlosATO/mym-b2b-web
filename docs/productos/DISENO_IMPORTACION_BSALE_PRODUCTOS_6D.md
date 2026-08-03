@@ -167,3 +167,15 @@ Esta subfase es SOLO análisis/reporte (read-only). No se implementa ni ejecuta 
 - **No toca catálogo**: sin productos, precios, stock ni imágenes; productos web solo como comparación read-only.
 - **Salida como reporte markdown**: `docs/productos/REPORTE_COBERTURA_BSALE_6D3F.md` con metadata, segmentos, summary, hallazgos, riesgos y recomendación de primer apply conservador (máx 20 productos, `draft`, `is_active=false`, `is_visible=false`, `bsale_sync_status='pending'`, sin precios/stock/imágenes, rollback conceptual vía migration/script controlado).
 - **Primer apply**: queda para fase posterior (6D.4 o siguiente), con su propia revisión.
+
+### 6D.4A — Diseño primer apply controlado
+Esta subfase es SOLO diseño; no se implementa ni ejecuta apply.
+- **Documento de diseño**: `docs/productos/DISENO_PRIMER_APPLY_BSALE_6D4A.md` define la estrategia completa del primer apply controlado desde una auditoría dry-run hacia `web_b2b.products`.
+- **Selección**: máximo 20 items de un único run `dry_run` / `success` revisado visualmente, con `action='create'`, `status='pending'`, `conflict_type IS NULL`, sku/bsale_variant_id/source_name no nulos.
+- **Validaciones previas**: SKU y bsale_variant_id inexistentes en `web_b2b.products` para la compañía, slug sin colisión (sufijo controlado), `proposed_changes` sin price/stock/cost, `payload.dry_run=true`, run perteneciente a la compañía y no aplicado antes.
+- **Idempotencia**: nueva tabla `web_b2b.bsale_product_apply_runs` (+ `apply_items`) con índice único `(company_id, import_run_id)`; apply en transacción; nunca doble apply.
+- **RPC futura (no ejecutada)**: `public.web_b2b_system_apply_bsale_product_import_run(target_company_id, import_run_id, max_items default 20)`, `SECURITY DEFINER`, `SET search_path=''`, GRANT solo `service_role`, `max_items <= 20`, sin SQL dinámico, sin precios/stock/imágenes.
+- **Estado de creación seguro**: `draft`, `is_active=false`, `is_visible=false`, `is_featured=false`, `bsale_sync_enabled=true`, `bsale_sync_status='pending'`, sin precios/stock/imágenes/publicación.
+- **Rollback conceptual**: nunca borrado automático; ante fallos marcar inactivo/no visible; limpieza por SQL/script controlado con IDs exactos.
+- **DEMO/TEST**: DEMO-001..003 y TEST-UI-001 se mantienen; antes del apply real decidir entre mantener inactivos, limpiar controlado o excluirlos por SKU.
+- **Siguiente fases**: 6D.4B (migración/RPC borrador sin ejecutar), 6D.4C (dry-run técnico con transacción rollback), 6D.4D (primer apply real ≤ 20 productos).
