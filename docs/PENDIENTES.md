@@ -15,7 +15,8 @@
 - [x] Fase 6B.2: Frontend CRUD de Categorías y Marcas en Panel Admin.
 
 ## Próximos Pasos Inmediatos
-- [ ] Fase 6C: Desarrollar CRUD de Productos (sin sync real).
+- [x] Fase 6C.1: RPCs Admin Productos aplicadas y validadas (`202607_web_b2b_admin_products_rpcs.sql`). `bsale_variant_id` ajustado a text. Funciones validadas con `BEGIN/ROLLBACK` sin dejar persistidos datos temporales.
+- [ ] Fase 6C.2: Frontend CRUD de Productos en Panel Admin.
 - [ ] Fase 6D: Integrar Storage seguro de imágenes.
 - [ ] Fase 7: Importación WooCommerce/cPanel + cruce Bsale (solo revisión, no crear en Bsale).
 - [ ] Fase 8: Sincronización real Bsale stock/precios.
