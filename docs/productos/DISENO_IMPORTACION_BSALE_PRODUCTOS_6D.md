@@ -158,3 +158,12 @@ Esta subfase amplía la lectura de Bsale real de forma segmentada para obtener u
 - **Persistencia en múltiples runs**: La RPC `web_b2b_system_create_bsale_product_import_audit` acepta máximo 50 items por llamada, por lo que el resultado del planner se divide en chunks de máximo 50 (`chunkPlannerItems`) y cada chunk se persiste como una corrida `dry_run` separada con su propio summary (`summarizePlannerItems`). El script además imprime un summary global en consola.
 - **Validaciones**: `sensitive_payload_count = 0` en los runs nuevos; `web_b2b.products` sin cambios (mismo conteo antes/después); sin precios/stock/imágenes; sin `apply`; sin botones de importación real (el panel de auditorías existente muestra los nuevos runs automáticamente).
 - **Límite de esta fase**: máximo 2 runs y 100 items totales insertados.
+
+### 6D.3F — Revisión de cobertura y estrategia primer apply
+Esta subfase es SOLO análisis/reporte (read-only). No se implementa ni ejecuta apply.
+- **Análisis read-only**: lectura de metadata de paginación Bsale (`fetchBsaleVariantPageMetadata`) y de segmentos controlados (`fetchBsaleProductSegment`), sin persistir runs/items nuevos.
+- **Estimación de cobertura Bsale**: la API de Bsale v1 reporta `count` total (3.591 variantes en la ejecución de referencia); el análisis cubrió una muestra ampliada de máximo **200 items** (4 segmentos × 50, offsets 0/50/100/150 ≈ 5.57%).
+- **Planner global**: se ejecuta sobre el conjunto completo leído para detectar duplicados entre segmentos; summary y muestras compactas (5 create / 5 skip / 5 conflict) se imprimen sin precios, stock ni payload.
+- **No toca catálogo**: sin productos, precios, stock ni imágenes; productos web solo como comparación read-only.
+- **Salida como reporte markdown**: `docs/productos/REPORTE_COBERTURA_BSALE_6D3F.md` con metadata, segmentos, summary, hallazgos, riesgos y recomendación de primer apply conservador (máx 20 productos, `draft`, `is_active=false`, `is_visible=false`, `bsale_sync_status='pending'`, sin precios/stock/imágenes, rollback conceptual vía migration/script controlado).
+- **Primer apply**: queda para fase posterior (6D.4 o siguiente), con su propia revisión.

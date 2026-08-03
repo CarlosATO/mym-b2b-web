@@ -22,6 +22,7 @@
 - [x] Fase 6D.3C: RPC system de auditoría dry_run aplicada y validada (`202607_web_b2b_system_create_bsale_import_audit_rpc.sql`). Dry-run real persistido (run `success`, 20 items, `sensitive_payload_count = 0`). Commit `49806cd`.
 - [x] Fase 6D.3D: Panel admin de auditorías Bsale (listado `/admin/productos/importaciones` + detalle `/[id]`). Solo lectura vía RPCs admin; sin Bsale, sin importación, sin productos/precios/stock/imágenes.
 - [x] Fase 6D.3E: Dry-run ampliado/segmentado (`dry-run-bsale-segmented-audit.ts`). Lectura paginada Bsale (2 segmentos × 50), planner global, persistencia en 2 runs dry_run de 50 items cada uno, `sensitive_payload_count = 0`, productos intactos (4 → 4).
+- [x] Fase 6D.3F: Análisis de cobertura Bsale read-only (`analyze-bsale-coverage.ts`). Total Bsale reportado: 3.591 variantes; 200 analizadas (5.57%); planner 184 create / 16 skip / 0 conflictos; reporte `docs/productos/REPORTE_COBERTURA_BSALE_6D3F.md` con estrategia de primer apply conservador. Sin runs/items nuevos.
 - [ ] Fase 6D: Integrar Storage seguro de imágenes.
 - [ ] Fase 7: Importación WooCommerce/cPanel + cruce Bsale (solo revisión, no crear en Bsale).
 - [ ] Fase 8: Sincronización real Bsale stock/precios.
