@@ -87,18 +87,19 @@ export default function ProductForm({ initialData, categories, brands }: Product
         <div className="md:col-span-2 space-y-6">
           {/* Identificación / SKU */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h2 className="text-lg font-medium text-slate-900 mb-4">Identificación y Presentación Web</h2>
+            <h2 className="text-lg font-medium text-slate-900 mb-4">Identificación (Bsale) y Presentación Web</h2>
             
             <div className="space-y-4">
               <div>
-                <label htmlFor="sku" className="block text-sm font-medium text-slate-700">SKU (Código único) *</label>
+                <label htmlFor="sku" className="block text-sm font-medium text-slate-700">SKU (Código único Bsale) *</label>
                 <input
                   type="text"
                   name="sku"
                   id="sku"
                   required
+                  readOnly={!!initialData}
                   defaultValue={initialData?.sku}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                  className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm px-3 py-2 border ${initialData ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'}`}
                 />
               </div>
 
@@ -157,7 +158,7 @@ export default function ProductForm({ initialData, categories, brands }: Product
 
           {/* Vínculo Bsale */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h2 className="text-lg font-medium text-slate-900 mb-4">Vínculo con Bsale (Fase Posterior)</h2>
+            <h2 className="text-lg font-medium text-slate-900 mb-4">Vínculo con Bsale</h2>
             <div className="space-y-4">
               <div>
                 <label htmlFor="bsale_variant_id" className="block text-sm font-medium text-slate-700">Variante ID (Bsale)</label>
@@ -165,10 +166,13 @@ export default function ProductForm({ initialData, categories, brands }: Product
                   type="text"
                   name="bsale_variant_id"
                   id="bsale_variant_id"
+                  readOnly={!!initialData?.bsale_variant_id}
                   defaultValue={initialData?.bsale_variant_id || ''}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border bg-slate-50"
+                  className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm px-3 py-2 border ${initialData?.bsale_variant_id ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500 bg-slate-50'}`}
                 />
-                <p className="mt-1 text-xs text-slate-500">ID interno de la variante en Bsale (dejar vacío si no está vinculado aún).</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {initialData?.bsale_variant_id ? 'Vínculo establecido de forma automatizada.' : 'ID interno de la variante en Bsale.'}
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -402,7 +406,7 @@ export default function ProductForm({ initialData, categories, brands }: Product
           disabled={isSubmitting}
           className="inline-flex justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:opacity-50"
         >
-          {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Crear Producto')}
+          {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
         </button>
       </div>
     </form>

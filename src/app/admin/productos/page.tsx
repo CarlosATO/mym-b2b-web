@@ -63,15 +63,16 @@ export default async function AdminProductsPage({
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold text-slate-900 truncate">Productos Web</h1>
           <p className="text-sm text-slate-500 mt-1 break-words">
-            Los productos provienen de Bsale y aquí se administra su presentación web. Mostrando {totalCount} productos.
+            Los productos provienen de Bsale. En este panel se administra su presentación web: categoría, marca, descripción, imagen, visibilidad, destacado y SEO. Mostrando {totalCount} productos.
           </p>
         </div>
-        <Link
-          href="/admin/productos/nuevo"
-          className="inline-flex flex-shrink-0 items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-slate-900 hover:bg-slate-800 transition-colors"
+        <span
+          className="inline-flex flex-shrink-0 items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-slate-400 cursor-not-allowed"
+          aria-disabled="true"
+          title="Importación Bsale (Próxima Fase)"
         >
-          Nuevo Producto
-        </Link>
+          Importar desde Bsale (Próxima Fase)
+        </span>
       </div>
 
       <div className="bg-white shadow-sm border border-slate-200 rounded-lg overflow-hidden flex flex-col">
