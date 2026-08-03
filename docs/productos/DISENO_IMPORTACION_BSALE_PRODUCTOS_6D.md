@@ -99,10 +99,15 @@ Por lo tanto, la web actual (cPanel / WooCommerce / WordPress) se usará **exclu
 
 La elección de Supabase Storage se adopta como almacenamiento inicial definitivo para esta etapa. Si en el futuro el volumen, costo o rendimiento lo exige, se podrá evaluar Cloudflare R2/CDN sin cambiar la lógica de negocio ni la tabla web_b2b.product_images.
 
-## 9. Fases Propuestas Siguientes
+## 9. 6D.2 — Modelo de Control de Corridas
+Se ha propuesto el modelo SQL base (sin aplicarlo todavía):
+- **Tabla de runs**: `web_b2b.bsale_product_import_runs` para auditar cuándo y cómo se corrió la importación.
+- **Tabla de items**: `web_b2b.bsale_product_import_items` para el detalle de cada producto revisado.
+- Permite la bandera de `mode` (`dry_run` o `apply`) para correr pruebas seguras sin alterar DB.
+- Todavía no se llama a Bsale. La visualización de este historial en el panel admin queda para fase posterior.
 
-1. **6D.1**: Aprobación de este documento de diseño.
-2. **6D.2**: Creación de RPCs (e.g., `web_b2b_sync_bsale_product`) y tablas de control de importación (logs).
-3. **6D.3**: Desarrollo de script de ingesta local que lea un payload de prueba o conecte con el endpoint controlado de Bsale (solo lectura).
-4. **6D.4**: Ejecución de importación con una muestra pequeña y validación de las reglas de upsert, conflictos y protección de datos comerciales.
-5. **6E**: Script de una sola vez para volcado de imágenes desde la web actual hacia el Storage de Supabase.
+## 10. Fases Propuestas Siguientes
+
+1. **6D.3**: Desarrollo de script de ingesta local que lea un payload de prueba o conecte con el endpoint controlado de Bsale (solo lectura).
+2. **6D.4**: Ejecución de importación con una muestra pequeña y validación de las reglas de upsert, conflictos y protección de datos comerciales.
+3. **6E**: Script de una sola vez para volcado de imágenes desde la web actual hacia el Storage de Supabase.
