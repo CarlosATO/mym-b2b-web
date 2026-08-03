@@ -50,6 +50,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/productos" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
             Productos Web
           </Link>
+          <Link href="/admin/productos/importaciones" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
+            Importaciones Bsale
+          </Link>
           <Link href="/admin/categorias" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-800 transition-colors">
             Categorías
           </Link>

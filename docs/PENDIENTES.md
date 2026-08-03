@@ -19,6 +19,8 @@
 - [x] Fase 6C.2: Frontend Listado de Productos en Panel Admin.
 - [x] Fase 6C.3: CRUD crear/editar producto (UI técnica completada).
 - [x] Fase 6C.3A: Ajuste de negocio: deshabilitada creación manual de productos. Los productos provendrán exclusivamente de Bsale/Sincronización. Admin edita únicamente presentación web.
+- [x] Fase 6D.3C: RPC system de auditoría dry_run aplicada y validada (`202607_web_b2b_system_create_bsale_import_audit_rpc.sql`). Dry-run real persistido (run `success`, 20 items, `sensitive_payload_count = 0`). Commit `49806cd`.
+- [x] Fase 6D.3D: Panel admin de auditorías Bsale (listado `/admin/productos/importaciones` + detalle `/[id]`). Solo lectura vía RPCs admin; sin Bsale, sin importación, sin productos/precios/stock/imágenes.
 - [ ] Fase 6D: Integrar Storage seguro de imágenes.
 - [ ] Fase 7: Importación WooCommerce/cPanel + cruce Bsale (solo revisión, no crear en Bsale).
 - [ ] Fase 8: Sincronización real Bsale stock/precios.

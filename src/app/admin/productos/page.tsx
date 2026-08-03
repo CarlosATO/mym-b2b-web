@@ -66,13 +66,13 @@ export default async function AdminProductsPage({
             Los productos provienen de Bsale. En este panel se administra su presentación web: categoría, marca, descripción, imagen, visibilidad, destacado y SEO. Mostrando {totalCount} productos.
           </p>
         </div>
-        <span
-          className="inline-flex flex-shrink-0 items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-slate-400 cursor-not-allowed"
-          aria-disabled="true"
-          title="Importación Bsale (Próxima Fase)"
+        <Link
+          href="/admin/productos/importaciones"
+          className="inline-flex flex-shrink-0 items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-slate-900 hover:bg-slate-800"
+          title="Ver historial de dry-runs de importación Bsale"
         >
-          Importar desde Bsale (Próxima Fase)
-        </span>
+          Auditorías Bsale
+        </Link>
       </div>
 
       <div className="bg-white shadow-sm border border-slate-200 rounded-lg overflow-hidden flex flex-col">
