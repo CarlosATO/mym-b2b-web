@@ -150,3 +150,11 @@ Esta subfase implementa la visualización en el panel admin de las corridas dry_
 - **No toca productos/precios/stock/imágenes**: Las RPCs usadas retornan solo datos de auditoría (sin payload, sin precios, sin stock, sin imágenes).
 - **Capa API modular**: `src/lib/api/admin-import-audits.ts` (server-only) expone `getBsaleProductImportRuns()` y `getBsaleProductImportItems(runId, pageSize, pageNumber)`, leyendo `MYM_COMPANY_ID` desde el servidor.
 - **Servicio**: Sirve como revisión previa antes de permitir cualquier `apply` en fases futuras.
+
+### 6D.3E — Dry-run ampliado/segmentado
+Esta subfase amplía la lectura de Bsale real de forma segmentada para obtener un dry-run más representativo, sin aplicar nada al catálogo.
+- **Lectura Bsale en segmentos**: Se usa `fetchBsaleProductSegment({ limit, offset })` sobre `/variants.json` (paginación `limit` + `offset` de Bsale v1, con `expand=product`, solo GET). La lectura respeta límites defensivos: `batchSize` 50 por request, `maxBatches` 2 y `maxTotal` 100 items en esta primera versión (nunca se supera salvo cambio explícito de código en otra fase).
+- **Planner global**: El planner corre sobre el conjunto completo leído (todos los segmentos combinados), no por batch aislado. Así, si un mismo SKU aparece en más de un segmento, ambos quedan registrados como conflicto `duplicate_sku`.
+- **Persistencia en múltiples runs**: La RPC `web_b2b_system_create_bsale_product_import_audit` acepta máximo 50 items por llamada, por lo que el resultado del planner se divide en chunks de máximo 50 (`chunkPlannerItems`) y cada chunk se persiste como una corrida `dry_run` separada con su propio summary (`summarizePlannerItems`). El script además imprime un summary global en consola.
+- **Validaciones**: `sensitive_payload_count = 0` en los runs nuevos; `web_b2b.products` sin cambios (mismo conteo antes/después); sin precios/stock/imágenes; sin `apply`; sin botones de importación real (el panel de auditorías existente muestra los nuevos runs automáticamente).
+- **Límite de esta fase**: máximo 2 runs y 100 items totales insertados.
