@@ -256,3 +256,12 @@ Subfase de diseño (sin implementación) para carga local desde computador e imp
 - **Seguridad**: la lectura queda pública; escritura/reemplazo/borrado quedan controlados por policies.
 - **Flujos futuros**: carga local, importación por URL, migración inicial desde la web actual, y luego curación de imágenes de productos ya normalizados.
 - **Reporte**: `docs/productos/DISENO_IMAGENES_PRODUCTOS_BSALE_6D5D.md`.
+
+### 6D.5E-B — Upload individual de imagen desde computador
+Implementación del flujo de carga local en el formulario de producto.
+- **Arquitectura**: componente cliente `src/components/admin/ProductImageUpload.tsx` usando Supabase browser client.
+- **Ruta**: `product-images/company_id/product_id/uuid.ext`.
+- **Guardado**: la URL pública se copia a `primary_image_url` y se persiste luego con el formulario.
+- **Seguridad**: no usa `service_role`; depende de policies del bucket público.
+- **Validación real**: Carlos subió una imagen al producto `BRACCO TRAVEL TRANSPORTADORA Nº3` y confirmó miniatura en admin; el producto siguió borrador/inactivo/no visible.
+- **Reporte**: `docs/productos/REPORTE_UPLOAD_INDIVIDUAL_IMAGEN_BSALE_6D5E_B.md`.

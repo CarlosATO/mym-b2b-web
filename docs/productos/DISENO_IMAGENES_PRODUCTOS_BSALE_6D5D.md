@@ -39,6 +39,14 @@ Esta fase es solo diseño. No implementa subida, bucket, SQL ni mutaciones.
 - Acepta `image/jpeg`, `image/png` y `image/webp`.
 - La seguridad de escritura/borrado queda en policies, no en lectura.
 
+### Estado implementado ahora
+
+- La fase 6D.5E-B agregó el botón `Subir desde mi computador` en `ProductForm`.
+- La imagen sube a `product-images/company_id/product_id/uuid.ext`.
+- La URL pública resultante se copia a `primary_image_url`.
+- El producto sigue guardándose solo cuando el usuario presiona `Guardar cambios`.
+- La fase fue probada por Carlos con `BRACCO TRAVEL TRANSPORTADORA Nº3` y la miniatura apareció en `/admin/productos`.
+
 ## Diseño de carga local
 
 ### UX propuesta
@@ -130,6 +138,7 @@ El bucket ya quedó público para servir imágenes de catálogo sin signed URLs.
 
 ## Próximas fases recomendadas
 
-- **6D.5E-B**: carga individual desde computador.
+- **6D.5E-B**: carga individual desde computador, ya implementada; pendiente prueba real.
+- **6D.5E-B**: carga individual desde computador, ya implementada y validada.
 - **6D.5F**: curar 1 producto real con imagen definitiva.
 - **6D.6**: migración masiva desde la web actual.

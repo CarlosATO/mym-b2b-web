@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { AdminProduct, AdminCategory, AdminBrand } from '@/lib/api/admin-catalog';
 import { saveAdminProduct } from '@/app/actions/admin-products';
 import { formatMissingPublicationFields, validateProductPublicationReadiness } from '@/lib/utils/product-publication';
+import ProductImageUpload from '@/components/admin/ProductImageUpload';
 
 interface ProductFormProps {
+  companyId: string;
   initialData?: AdminProduct;
   categories: AdminCategory[];
   brands: AdminBrand[];
@@ -29,7 +31,7 @@ function ChecklistPill({ complete }: { complete: boolean }) {
   );
 }
 
-export default function ProductForm({ initialData, categories, brands }: ProductFormProps) {
+export default function ProductForm({ companyId, initialData, categories, brands }: ProductFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -269,29 +271,15 @@ export default function ProductForm({ initialData, categories, brands }: Product
 
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Imagen principal</h2>
-            <p className="mt-1 text-sm text-slate-500">Imagen individual ya soportada. La importación masiva desde la web actual vendrá después.</p>
+            <p className="mt-1 text-sm text-slate-500">Sube una imagen desde tu computador o pega una URL. La importación masiva desde la web actual vendrá después.</p>
 
             <div className="mt-4 space-y-4">
-              {primaryImageUrl ? (
-                <div className="h-56 w-full rounded border border-slate-200 bg-center bg-contain bg-no-repeat" style={{ backgroundImage: `url(${primaryImageUrl})` }} />
-              ) : (
-                <div className="flex h-56 w-full items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-400">
-                  Sin imagen principal
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="primary_image_url" className="block text-sm font-medium text-slate-700">URL imagen principal</label>
-                <input
-                  type="url"
-                  name="primary_image_url"
-                  id="primary_image_url"
-                  value={primaryImageUrl}
-                  onChange={(e) => setPrimaryImageUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
+              <ProductImageUpload
+                companyId={companyId}
+                productId={initialData?.id || ''}
+                value={primaryImageUrl}
+                onChange={setPrimaryImageUrl}
+              />
             </div>
           </section>
 

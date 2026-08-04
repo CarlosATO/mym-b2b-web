@@ -42,6 +42,7 @@ export default async function EditAdminProductPage({
       </div>
 
       <ProductForm 
+        companyId={companyId}
         initialData={product}
         categories={categories} 
         brands={brands} 
