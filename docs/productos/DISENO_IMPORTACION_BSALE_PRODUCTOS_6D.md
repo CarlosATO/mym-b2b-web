@@ -184,3 +184,10 @@ Esta subfase es SOLO diseño; no se implementa ni ejecuta apply.
 Esta subfase es SOLO borrador/revisión técnica; no se ejecuta SQL ni se crean productos.
 - **Borrador local**: `docs/productos/borrador_apply_control_6d4b.sql` (aún no migración formal) con tablas `web_b2b.bsale_product_apply_runs` y `bsale_product_apply_items`, helper `web_b2b.generate_unique_product_slug_for_import` y RPC futura `public.web_b2b_system_apply_bsale_product_import_run`.
 - **Detalles**: ver `docs/productos/DISENO_PRIMER_APPLY_BSALE_6D4A.md` (sección 6D.4B). Aplica máximo 20 items de un run `dry_run`/`success` revisado; productos en estado seguro (`draft`, inactivo, no visible, `bsale_sync_status='pending'`); idempotencia por UNIQUE(company_id, import_run_id); transacción atómica con rollback total; sin precios/stock/imágenes.
+
+### 6D.4C — Migración candidata y prueba técnica con ROLLBACK
+Esta subfase es SOLO prueba técnica; nada se persiste. Se ejecuta la migración candidata y la RPC únicamente dentro de transacciones `BEGIN; ... ROLLBACK`.
+- **Migración candidata**: `supabase/migrations/20260804120000_web_b2b_controlled_bsale_product_apply.sql` (basada en el borrador 6D.4B aprobado, commit `f3baa0a`). Incluye apply_runs/apply_items, UNIQUE(id, run_id, company_id) sobre import_items vía DO block, helper de slug, RPC system y revokes/grants solo service_role. NO es migración aplicada.
+- **Corrección aplicada**: prefijos `p_` en parámetros de la RPC (colisión de nombre `import_run_id` entre parámetro y columna — error 42702 detectado en ejecución). Aplicada en la candidata y el borrador 6D.4B quedó alineado con la misma corrección para evitar divergencia documental.
+- **Prueba rollback**: ver `docs/productos/REPORTE_ROLLBACK_APPLY_BSALE_6D4C.md`. Run usado: `22e1d487-36e6-4475-a0e0-a28d0305dbcc`. Se habrían creado 20 productos seguros; tras ROLLBACK la DB volvió al estado inicial (4 productos, sin apply_runs/apply_items/funciones).
+- **Siguiente fase**: 6D.4D (primer apply real ≤ 20 productos, tras revisión visual del run elegido y decisión DEMO/TEST).

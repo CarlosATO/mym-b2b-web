@@ -180,3 +180,14 @@ Subfase de revisión técnica: borrador SQL local, sin ejecutar.
 - **Datos insertados**: draft, is_active=false, is_visible=false, is_featured=false, bsale_sync_enabled=true, bsale_sync_status='pending' (aún sin sincronización operativa), bsale_last_checked_at=null (vínculo inicial desde la auditoría; coherencia con 'pending'), sin precios/stock/imágenes.
 - **Errores/rollback**: transacción atómica; fallo → RAISE EXCEPTION → rollback total (sin productos ni apply_run persistidos); `failed` persistido queda para observabilidad futura.
 - **DEMO/TEST**: nota en el borrador — DEMO-001..003 y TEST-UI-001 se revisan antes del primer apply real; en 6D.4B no se limpian.
+
+### 6D.4C — Migración candidata y prueba técnica rollback
+
+Subfase de prueba técnica SIN persistencia: la migración candidata y la RPC se ejecutan únicamente dentro de transacciones `BEGIN; ... ROLLBACK`.
+
+- **Migración candidata**: `supabase/migrations/20260804120000_web_b2b_controlled_bsale_product_apply.sql` — conversión formal del borrador 6D.4B (commit `f3baa0a`), sin cambio de alcance. NO está aplicada en la DB.
+- **Prueba de aplicación (rollback)**: la migración completa se ejecutó dentro de `BEGIN; ... ROLLBACK`; tablas, constraint UNIQUE, helper y RPC quedaron disponibles dentro de la transacción y no existen después del rollback.
+- **Prueba técnica RPC (rollback)**: con el run `22e1d487-36e6-4475-a0e0-a28d0305dbcc` (dry_run/success, 20 items válidos) la RPC creó 20 productos en estado seguro (`draft`, inactivo, no visible, `bsale_sync_status='pending'`, `bsale_last_checked_at=NULL`), sin precios/stock/imágenes, y registró apply_runs + 20 apply_items completos. Todo se deshizo con ROLLBACK.
+- **Pruebas negativas (rollback)**: max_items>20 falla; max_items NULL usa 20; run inexistente falla; doble apply del mismo run falla por idempotencia. Sin candidatos: no se probó (no existe run sin candidatos en la DB).
+- **Hallazgo corregido**: la RPC del borrador provocaba error `42702 column reference "import_run_id" is ambiguous` (parámetro vs columna de tabla). Se corrigió en la migración candidata con prefijos `p_` (`p_target_company_id`, `p_import_run_id`, `p_max_items`) y el borrador `docs/productos/borrador_apply_control_6d4b.sql` fue alineado con la misma corrección para evitar divergencia documental (única diferencia: línea de comentario).
+- **Estado**: fase lista para 6D.4D (primer apply real ≤ 20 productos) tras decisión DEMO/TEST y revisión visual del run elegido.

@@ -1,29 +1,25 @@
 -- ==============================================================================
--- BORRADOR 6D.4B: APPLY CONTROLADO Bsale dry-run -> web_b2b.products
--- ESTADO: SOLO BORRADOR / REVISIÓN. NO EJECUTAR EN ESTA FASE.
--- ALINEADO con la migración candidata 6D.4C
---   (supabase/migrations/20260804120000_web_b2b_controlled_bsale_product_apply.sql):
---   parámetros RPC con prefijos p_ (corrección hallazgo 42702 detectado en
---   la prueba rollback de 6D.4C). Este borrador es referencia documental;
---   la migración formal candidata es la fuente autoritativa.
--- Antes de convertirlo en migración formal (fase 6D.4B->formal o 6D.4C) debe
--- revisarse con el documento docs/productos/DISENO_PRIMER_APPLY_BSALE_6D4A.md.
+-- MIGRACIÓN FORMAL CANDIDATA 6D.4C: APPLY CONTROLADO Bsale dry-run -> web_b2b.products
+-- ORIGEN: docs/productos/borrador_apply_control_6d4b.sql
+--         (borrador aprobado en 6D.4B, commit f3baa0a; revisado en 6D.4C).
+-- ESTADO: CANDIDATA. Probada SOLO dentro de transacción BEGIN; ... ROLLBACK (6D.4C).
+--         NO aplicada de forma persistente todavía. Primer apply real = fase 6D.4D.
 --
 -- ALCANCE:
 --   * Crear web_b2b.bsale_product_apply_runs y web_b2b.bsale_product_apply_items.
 --   * Helper de slug único: web_b2b.generate_unique_product_slug_for_import
 --     (normaliza acentos/ñ/ç con translate, sin extensiones; GRANT solo service_role).
---   * RPC futura public.web_b2b_system_apply_bsale_product_import_run
+--   * RPC public.web_b2b_system_apply_bsale_product_import_run
 --     (SECURITY DEFINER, service_role, max_items 1..20 con COALESCE,
 --     sin candidatos -> excepción controlada, sin precios/stock/imágenes).
 --   * NO toca product_prices, product_stock, product_images.
 --   * NO expone web_b2b en PostgREST.
+--   * NO agrega UI ni funciones admin.
 --
 -- DECISIONES DE DISEÑO (6D.4A):
 --   * Idempotencia: UNIQUE(company_id, import_run_id) en apply_runs y
 --     UNIQUE(company_id, import_item_id) en apply_items.
 --   * Transacción atómica: si algo falla -> RAISE EXCEPTION -> rollback total.
---     El estado 'failed' persistido queda pendiente de observabilidad futura.
 --   * bsale_last_checked_at = NULL: el apply crea el vínculo inicial desde la
 --     auditoría dry-run, pero aún no hay sincronización operativa (coherencia
 --     con bsale_sync_status = 'pending').
@@ -234,7 +230,7 @@ REVOKE ALL ON FUNCTION web_b2b.generate_unique_product_slug_for_import(uuid, tex
 GRANT EXECUTE ON FUNCTION web_b2b.generate_unique_product_slug_for_import(uuid, text, text) TO service_role;
 
 -- ==============================================================================
--- D. RPC System de Apply Controlado (FUTURA, NO EJECUTAR EN ESTA FASE)
+-- D. RPC System de Apply Controlado
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.web_b2b_system_apply_bsale_product_import_run(
@@ -445,7 +441,6 @@ BEGIN
 
   -- ----------------------------------------------------------------------------
   -- 3. Cerrar apply_run. success si todo OK; partial si hubo skip/conflict/error.
-  --    El estado 'failed' queda pendiente de observabilidad futura.
   -- ----------------------------------------------------------------------------
   IF v_created > 0 AND (v_skipped = 0 AND v_conflicts = 0 AND v_errors = 0) THEN
     v_final_status := 'success';
@@ -485,19 +480,16 @@ GRANT EXECUTE ON FUNCTION public.web_b2b_system_apply_bsale_product_import_run(u
 -- ==============================================================================
 -- 1. Transacción atómica: si una validación falla (RAISE EXCEPTION) o la
 --    transacción aborta, NO queda ningún producto ni apply_run persistido
---    (rollback total). El 'failed' persistido queda para observabilidad futura.
+--    (rollback total).
 -- 2. Si el caller desea un comportamiento no destructivo previo, se puede
 --    envolver el llamado en BEGIN; ... ROLLBACK (dry-run técnico 6D.4C).
 -- 3. DEMO/TEST: antes del primer apply real revisar DEMO-001, DEMO-002,
---    DEMO-003 y TEST-UI-001. En esta fase NO se limpian; en fase futura
+--    DEMO-003 y TEST-UI-001. En 6D.4B/6D.4C NO se limpian; en fase futura
 --    decidir entre mantenerlos inactivos/draft, excluirlos de vistas o
 --    limpiarlos por SQL/script controlado con IDs exactos.
 -- 4. No se tocan product_prices, product_stock, product_images.
 -- 5. apply_items registra únicamente los candidatos intentados por el apply,
 --    no todos los import_items del dry-run original. Los import_items no
 --    elegibles permanecen disponibles en la auditoría dry-run.
--- 6. 6D.4C: el patrón original sin prefijos provocaba error 42702
---    ("column reference import_run_id is ambiguous", parámetro vs columna
---    a.import_run_id). Detectado en la prueba rollback y corregido con
---    prefijos p_ (p_target_company_id, p_import_run_id, p_max_items), igual
---    que en la migración candidata. Sin SQL persistido.
+-- 6. 6D.4C: esta migración se probó únicamente con BEGIN; ... ROLLBACK.
+--    NO se aplicó de forma persistente. La aplicación real es fase 6D.4D.
