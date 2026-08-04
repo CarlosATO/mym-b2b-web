@@ -38,6 +38,7 @@
 - [ ] Fase 6D.5D: Diseño de gestión de imágenes de productos. Documento solo diseño para carga local desde computador e importación por URL con Storage propio. `primary_image_url` seguirá siendo la interfaz de edición hasta implementar subida real. Reporte `docs/productos/DISENO_IMAGENES_PRODUCTOS_BSALE_6D5D.md`.
 - [x] Fase 6D.5E-A: Base Storage para imágenes de productos. Migración candidata `20260804130000_web_b2b_product_images_storage.sql` validada con `BEGIN; ... ROLLBACK;`: bucket `product-images`, helpers de path y policies de `storage.objects` sin persistir cambios. Reporte `docs/productos/REPORTE_STORAGE_IMAGENES_PRODUCTOS_6D5E_A.md`.
 - [x] Fase 6D.5E-B: Carga individual de imágenes desde computador. Implementada en `ProductForm` con upload a `product-images` y validada por Carlos con el producto `BRACCO TRAVEL TRANSPORTADORA Nº3`; la imagen quedó en Storage, `primary_image_url` se actualizó y el producto siguió borrador/inactivo/no visible. Reporte `docs/productos/REPORTE_UPLOAD_INDIVIDUAL_IMAGEN_BSALE_6D5E_B.md`.
+- [x] Fase 6D.5F-A: Visualización jerárquica de categorías. La UI muestra padre/subcategoría con rutas como `Accesorios > Transportadoras` sin cambiar `parent_id` ni el schema. Reporte `docs/productos/REPORTE_CATEGORIAS_JERARQUICAS_6D5F_A.md`.
 - [ ] Fase 6D.5: Curación comercial de la muestra (categorías, marcas, descripciones/SEO) y diseño de sync recurrente Bsale.
 - [ ] Fase 6D: Integrar Storage seguro de imágenes.
 - [ ] Fase 7: Importación WooCommerce/cPanel + cruce Bsale (solo revisión, no crear en Bsale).

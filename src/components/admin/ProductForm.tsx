@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AdminProduct, AdminCategory, AdminBrand } from '@/lib/api/admin-catalog';
 import { saveAdminProduct } from '@/app/actions/admin-products';
 import { formatMissingPublicationFields, validateProductPublicationReadiness } from '@/lib/utils/product-publication';
+import { getCategorySelection, getTopLevelCategories, getChildCategories, hasChildCategories, getCategoryById } from '@/lib/utils/category-hierarchy';
 import ProductImageUpload from '@/components/admin/ProductImageUpload';
 
 interface ProductFormProps {
@@ -41,7 +42,12 @@ export default function ProductForm({ companyId, initialData, categories, brands
   const [slugEdited, setSlugEdited] = useState(!!initialData?.slug);
   const [shortDescription, setShortDescription] = useState(initialData?.short_description || '');
   const [description, setDescription] = useState(initialData?.description || '');
-  const [categoryId, setCategoryId] = useState(initialData?.category_id || '');
+  const initialCategorySelection = useMemo(
+    () => getCategorySelection(categories, initialData?.category_id),
+    [categories, initialData?.category_id]
+  );
+  const [parentCategoryId, setParentCategoryId] = useState(initialCategorySelection.parentId);
+  const [subcategoryId, setSubcategoryId] = useState(initialCategorySelection.childId);
   const [brandId, setBrandId] = useState(initialData?.brand_id || '');
   const [primaryImageUrl, setPrimaryImageUrl] = useState(initialData?.primary_image_url || '');
   const [seoTitle, setSeoTitle] = useState(initialData?.seo_title || '');
@@ -60,8 +66,19 @@ export default function ProductForm({ companyId, initialData, categories, brands
     && !initialData.is_visible
   );
 
+  const parentCategories = useMemo(() => getTopLevelCategories(categories), [categories]);
+  const subcategoryOptions = useMemo(() => (
+    parentCategoryId ? getChildCategories(categories, parentCategoryId) : []
+  ), [categories, parentCategoryId]);
+  const selectedCategoryId = subcategoryId || parentCategoryId || '';
+  const selectedCategory = useMemo(() => getCategoryById(categories, selectedCategoryId), [categories, selectedCategoryId]);
+  const publicationIntent = reviewStatus === 'published' || isActive || isVisible || isFeatured;
+  const parentCategoryHasChildren = parentCategoryId ? hasChildCategories(categories, parentCategoryId) : false;
+  const categoryRequiresSpecificChild = Boolean(parentCategoryId && parentCategoryHasChildren && !subcategoryId);
+  const publicationCategoryRequiresChild = publicationIntent && categoryRequiresSpecificChild;
+
   const publicationReadiness = validateProductPublicationReadiness({
-    category_id: categoryId,
+    category_id: selectedCategoryId,
     brand_id: brandId,
     primary_image_url: primaryImageUrl,
     name,
@@ -69,20 +86,31 @@ export default function ProductForm({ companyId, initialData, categories, brands
     short_description: shortDescription,
     description,
   });
-  const publicationIntent = reviewStatus === 'published' || isActive || isVisible || isFeatured;
   const missingPublicationFields = formatMissingPublicationFields(publicationReadiness.missingFields);
+  const publicationMissingCategory = publicationCategoryRequiresChild
+    ? 'subcategoría específica'
+    : null;
+  const publicationMissingFields = [missingPublicationFields, publicationMissingCategory].filter(Boolean).join(', ');
+  const publicationReadyToPublish = publicationReadiness.isReady && !categoryRequiresSpecificChild;
 
   const checklist = useMemo(() => ([
-    { label: 'Categoría / Familia', complete: Boolean(categoryId) },
+    { label: 'Categoría / Familia', complete: Boolean(selectedCategoryId) && !categoryRequiresSpecificChild },
     { label: 'Marca web', complete: Boolean(brandId) },
     { label: 'Imagen principal', complete: Boolean(primaryImageUrl.trim()) },
     { label: 'Descripción corta', complete: Boolean(shortDescription.trim()) },
     { label: 'Descripción larga', complete: Boolean(description.trim()) },
     { label: 'SEO', complete: Boolean(seoTitle.trim() && seoDescription.trim()) },
-    { label: 'Producto visible / publicado', complete: publicationReadiness.isReady && publicationIntent },
-  ]), [categoryId, brandId, primaryImageUrl, shortDescription, description, seoTitle, seoDescription, publicationReadiness.isReady, publicationIntent]);
+    { label: 'Producto visible / publicado', complete: publicationReadyToPublish && publicationIntent },
+  ]), [selectedCategoryId, categoryRequiresSpecificChild, brandId, primaryImageUrl, shortDescription, description, seoTitle, seoDescription, publicationReadyToPublish, publicationIntent]);
 
   const completeCount = checklist.filter((item) => item.complete).length;
+  const selectedCategoryPath = useMemo(() => {
+    if (!selectedCategory) return '';
+    if (!selectedCategory.parent_id) return selectedCategory.name;
+
+    const parentName = parentCategories.find((category) => category.id === selectedCategory.parent_id)?.name || 'Ninguna';
+    return `${parentName} > ${selectedCategory.name}`;
+  }, [parentCategories, selectedCategory]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -211,19 +239,50 @@ export default function ProductForm({ companyId, initialData, categories, brands
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label htmlFor="category_id" className="block text-sm font-medium text-slate-700">Categoría / Familia web</label>
+                  <label htmlFor="category_parent_id" className="block text-sm font-medium text-slate-700">Categoría principal</label>
                   <select
-                    name="category_id"
-                    id="category_id"
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
+                    id="category_parent_id"
+                    value={parentCategoryId}
+                    onChange={(e) => {
+                      setParentCategoryId(e.target.value);
+                      setSubcategoryId('');
+                    }}
                     className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   >
                     <option value="">Ninguna</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    {parentCategories.map((category) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
                     ))}
                   </select>
+                  <input type="hidden" name="category_parent_id" value={parentCategoryId} />
+                </div>
+
+                <div>
+                  <label htmlFor="category_subcategory_id" className="block text-sm font-medium text-slate-700">Subcategoría</label>
+                  <select
+                    id="category_subcategory_id"
+                    value={subcategoryId}
+                    onChange={(e) => setSubcategoryId(e.target.value)}
+                    disabled={!parentCategoryId || subcategoryOptions.length === 0}
+                    className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                  >
+                    <option value="">{parentCategoryId ? 'Sin subcategoría' : 'Selecciona una categoría principal'}</option>
+                    {subcategoryOptions.map((category) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
+                  <input type="hidden" name="category_subcategory_id" value={subcategoryId} />
+                  <input type="hidden" name="category_id" value={selectedCategoryId} />
+                  <p className="mt-1 text-xs text-slate-500">Selecciona la subcategoría más específica disponible.</p>
+                  {selectedCategoryPath && (
+                    <p className="mt-1 text-xs font-medium text-slate-600">Ruta elegida: {selectedCategoryPath}</p>
+                  )}
+                  {parentCategoryId && subcategoryOptions.length === 0 && (
+                    <p className="mt-1 text-xs text-slate-500">Esta categoría principal no tiene subcategorías.</p>
+                  )}
+                  {publicationMissingCategory && (
+                    <p className="mt-1 text-xs font-medium text-amber-700">Para publicar, selecciona una {publicationMissingCategory}.</p>
+                  )}
                 </div>
 
                 <div>
@@ -335,18 +394,18 @@ export default function ProductForm({ companyId, initialData, categories, brands
             <p className="mt-1 text-sm text-amber-700">Publica solo cuando categoría, marca, imagen y contenido estén revisados.</p>
 
             <div className={`mt-4 rounded-md border p-4 ${publicationReadiness.isReady ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
-              <p className={`text-sm font-medium ${publicationReadiness.isReady ? 'text-green-800' : 'text-amber-800'}`}>
-                {publicationReadiness.isReady ? 'Este producto está listo para publicación.' : 'Este producto aún no está listo para publicación.'}
-              </p>
-              {!publicationReadiness.isReady && (
-                <p className="mt-1 text-sm text-amber-700">
-                  Falta: {missingPublicationFields}.
+                <p className={`text-sm font-medium ${publicationReadyToPublish ? 'text-green-800' : 'text-amber-800'}`}>
+                  {publicationReadyToPublish ? 'Este producto está listo para publicación.' : 'Este producto aún no está listo para publicación.'}
                 </p>
-              )}
-              {publicationIntent && !publicationReadiness.isReady && (
-                <p className="mt-2 text-sm font-semibold text-red-700">
-                  Si intentas dejarlo activo, visible o publicado ahora, el guardado será bloqueado.
-                </p>
+                {!publicationReadyToPublish && (
+                  <p className="mt-1 text-sm text-amber-700">
+                    Falta: {publicationMissingFields || 'completar la clasificación' }.
+                  </p>
+                )}
+                {publicationIntent && !publicationReadyToPublish && (
+                  <p className="mt-2 text-sm font-semibold text-red-700">
+                    Si intentas dejarlo activo, visible o publicado ahora, el guardado será bloqueado.
+                  </p>
               )}
             </div>
 

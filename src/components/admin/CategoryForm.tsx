@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import Link from 'next/link';
 import { AdminCategory } from '@/lib/api/admin-catalog';
 import { upsertCategoryAction, ActionResponse } from '@/app/actions/admin-categories';
+import { buildCategoryPathOptions, getCategoryDescendantIds } from '@/lib/utils/category-hierarchy';
 
 interface CategoryFormProps {
   initialData?: AdminCategory | null;
@@ -42,8 +43,14 @@ export default function CategoryForm({ initialData, categories }: CategoryFormPr
     setSlugEdited(true);
   };
 
-  // Filtrar categorías disponibles para parent_id (excluir a sí misma)
-  const availableParents = categories.filter((c) => c.id !== initialData?.id);
+  const descendantIds = initialData?.id ? getCategoryDescendantIds(categories, initialData.id) : new Set<string>();
+  const availableParentOptions = buildCategoryPathOptions(categories).filter((option) => {
+    if (!initialData?.id) {
+      return true;
+    }
+
+    return option.id !== initialData.id && !descendantIds.has(option.id);
+  });
 
   return (
     <form action={formAction} className="space-y-8 bg-white p-6 rounded-lg shadow-sm border border-slate-200">
@@ -91,15 +98,16 @@ export default function CategoryForm({ initialData, categories }: CategoryFormPr
         {/* Parent Category */}
         <div>
           <label htmlFor="parent_id" className="block text-sm font-medium text-slate-700">Categoría Padre</label>
+          <p className="mt-1 text-xs text-slate-500">Deja vacío para crear una categoría principal. Selecciona una categoría padre para crear una subcategoría.</p>
           <select
             id="parent_id"
             name="parent_id"
             defaultValue={initialData?.parent_id || ''}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
+            className="mt-2 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
           >
             <option value="">Sin categoría padre</option>
-            {availableParents.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            {availableParentOptions.map((option) => (
+              <option key={option.id} value={option.id}>{option.path}</option>
             ))}
           </select>
         </div>

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { upsertAdminProduct, AdminProduct } from '@/lib/api/admin-catalog';
+import { upsertAdminProduct, AdminProduct, getAdminCategories } from '@/lib/api/admin-catalog';
 import { formatMissingPublicationFields, validateProductPublicationReadiness } from '@/lib/utils/product-publication';
 
 export async function saveAdminProduct(formData: FormData, productId?: string) {
@@ -25,6 +25,8 @@ export async function saveAdminProduct(formData: FormData, productId?: string) {
     const isFeatured = formData.get('is_featured') === 'on';
     const bsaleSyncEnabled = formData.get('bsale_sync_enabled') === 'on';
     const orderIndexStr = formData.get('order_index')?.toString() || '0';
+    const categoryParentId = formData.get('category_parent_id')?.toString() || '';
+    const categorySubcategoryId = formData.get('category_subcategory_id')?.toString() || '';
 
     const product: Partial<AdminProduct> & { sku: string; name: string; slug: string } = {
       id: productId,
@@ -49,6 +51,15 @@ export async function saveAdminProduct(formData: FormData, productId?: string) {
     };
 
     const publicationIntent = isActive || isVisible || isFeatured || product.review_status === 'published';
+    if (publicationIntent && categoryParentId) {
+      const categories = await getAdminCategories(supabase, companyId);
+      const parentHasChildren = categories.some((category) => category.parent_id === categoryParentId);
+
+      if (parentHasChildren && !categorySubcategoryId) {
+        throw new Error('No se puede publicar este producto. Falta seleccionar una subcategoría específica.');
+      }
+    }
+
     if (publicationIntent) {
       const readiness = validateProductPublicationReadiness(product);
       if (!readiness.isReady) {

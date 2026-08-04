@@ -265,3 +265,12 @@ Implementación del flujo de carga local en el formulario de producto.
 - **Seguridad**: no usa `service_role`; depende de policies del bucket público.
 - **Validación real**: Carlos subió una imagen al producto `BRACCO TRAVEL TRANSPORTADORA Nº3` y confirmó miniatura en admin; el producto siguió borrador/inactivo/no visible.
 - **Reporte**: `docs/productos/REPORTE_UPLOAD_INDIVIDUAL_IMAGEN_BSALE_6D5E_B.md`.
+
+### 6D.5F-A — Visualización jerárquica de categorías
+Mejora de interfaz para categorías y selector de productos sin cambiar la base de datos.
+- **Decisión**: mantener `parent_id` y `category_id` tal como están.
+- **Vista admin**: categorías padre primero, subcategorías debajo con sangría, badges compactos y estados en una sola línea.
+- **Selector de producto**: `Categoría principal` + `Subcategoría`, con un solo `category_id` final para guardar.
+- **Selector de padre**: también muestra rutas jerárquicas.
+- **Reporte**: `docs/productos/REPORTE_CATEGORIAS_JERARQUICAS_6D5F_A.md`.
+- **Estado**: implementado y validado con `npm run lint` y `npm run build`.

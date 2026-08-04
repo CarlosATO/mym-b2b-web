@@ -1,6 +1,8 @@
+import React from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getAdminCategories } from '@/lib/api/admin-catalog';
+import { buildCategoryTree } from '@/lib/utils/category-hierarchy';
 
 export const metadata = {
   title: 'Categorías | Admin',
@@ -15,7 +17,75 @@ export default async function AdminCategoriesPage() {
   }
 
   const categories = await getAdminCategories(supabase, companyId);
+  const categoryTree = buildCategoryTree(categories);
   const totalCount = categories.length;
+
+  const renderRows = (nodes: typeof categoryTree) => nodes.map((node) => {
+    const category = node.category;
+    const parentName = category.parent_id
+      ? categories.find((c) => c.id === category.parent_id)?.name || 'Desconocido'
+      : '-';
+    const rowIsParent = node.depth === 0;
+    const rowPadding = rowIsParent ? 'px-6 py-4' : 'px-6 py-2.5';
+    const nameClass = rowIsParent ? 'text-sm font-semibold text-slate-900' : 'text-sm font-medium text-slate-700';
+    const badgeClass = rowIsParent
+      ? 'bg-slate-100 text-slate-700'
+      : 'bg-blue-50 text-blue-700';
+
+    return (
+      <React.Fragment key={category.id}>
+        <tr className={rowIsParent ? 'hover:bg-slate-50' : 'bg-slate-50/40 hover:bg-slate-100/60'}>
+          <td className={rowPadding}>
+            <div className="flex items-start gap-2" style={{ paddingLeft: `${node.depth * 16}px` }}>
+              <span className={`mt-0.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${badgeClass}`}>
+                {rowIsParent ? 'Padre' : 'Hija'}
+              </span>
+              <div className="min-w-0">
+                <div className={`flex items-center gap-2 ${nameClass}`}>
+                  {node.depth > 0 && <span className="text-slate-400 font-normal">└─</span>}
+                  <span className="truncate">{category.name}</span>
+                </div>
+                <div className="text-[11px] leading-4 text-slate-500">Ruta: {node.path}</div>
+              </div>
+            </div>
+          </td>
+          <td className={`${rowPadding} whitespace-nowrap text-sm text-slate-500`}>
+            {category.slug}
+          </td>
+          <td className={`${rowPadding} whitespace-nowrap text-sm text-slate-500`}>
+            {parentName}
+          </td>
+          <td className={`${rowPadding} whitespace-nowrap text-sm text-slate-500`}>
+            {category.order_index}
+          </td>
+          <td className={`${rowPadding} whitespace-nowrap text-sm text-slate-500`}>
+            {category.display_style}
+          </td>
+          <td className={`${rowPadding} whitespace-nowrap`}>
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${category.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {category.is_active ? 'Activa' : 'Inactiva'}
+              </span>
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${category.is_visible_catalog ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>
+                {category.is_visible_catalog ? 'Catálogo' : 'No Catálogo'}
+              </span>
+              {category.is_visible_home && (
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 font-medium bg-amber-100 text-amber-800">
+                  Portada
+                </span>
+              )}
+            </div>
+          </td>
+          <td className={`${rowPadding} whitespace-nowrap text-right text-sm font-medium`}>
+            <Link href={`/admin/categorias/${category.id}/editar`} className="text-blue-600 hover:text-blue-900">
+              Editar
+            </Link>
+          </td>
+        </tr>
+        {node.children.length > 0 && renderRows(node.children)}
+      </React.Fragment>
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -59,55 +129,14 @@ export default async function AdminCategoriesPage() {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Slug</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Padre</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Orden</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estilo</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estados</th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
-                {categories.map((category) => {
-                  const parentName = category.parent_id 
-                    ? categories.find(c => c.id === category.parent_id)?.name || 'Desconocido'
-                    : '-';
-                  
-                  return (
-                    <tr key={category.id} className="hover:bg-slate-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-900">{category.name}</div>
-                        <div className="text-xs text-slate-500">Orden: {category.order_index}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                        {category.slug}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                        {parentName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                        {category.display_style}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${category.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {category.is_active ? 'Activa' : 'Inactiva'}
-                          </span>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${category.is_visible_catalog ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>
-                            {category.is_visible_catalog ? 'Catálogo' : 'No Catálogo'}
-                          </span>
-                          {category.is_visible_home && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                              Portada
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link href={`/admin/categorias/${category.id}/editar`} className="text-blue-600 hover:text-blue-900">
-                          Editar
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {renderRows(categoryTree)}
               </tbody>
             </table>
           </div>
