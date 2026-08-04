@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { upsertAdminProduct, AdminProduct } from '@/lib/api/admin-catalog';
+import { formatMissingPublicationFields, validateProductPublicationReadiness } from '@/lib/utils/product-publication';
 
 export async function saveAdminProduct(formData: FormData, productId?: string) {
   try {
@@ -46,6 +47,14 @@ export async function saveAdminProduct(formData: FormData, productId?: string) {
       bsale_sync_status: formData.get('bsale_sync_status') as string || 'pending',
       primary_image_url: formData.get('primary_image_url') as string || null,
     };
+
+    const publicationIntent = isActive || isVisible || isFeatured || product.review_status === 'published';
+    if (publicationIntent) {
+      const readiness = validateProductPublicationReadiness(product);
+      if (!readiness.isReady) {
+        throw new Error(`No se puede publicar este producto. Falta: ${formatMissingPublicationFields(readiness.missingFields)}.`);
+      }
+    }
 
     if (!product.sku || !product.name || !product.slug) {
       throw new Error('SKU, Nombre y Slug son obligatorios');

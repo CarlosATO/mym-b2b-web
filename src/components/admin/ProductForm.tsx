@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminProduct, AdminCategory, AdminBrand } from '@/lib/api/admin-catalog';
 import { saveAdminProduct } from '@/app/actions/admin-products';
+import { formatMissingPublicationFields, validateProductPublicationReadiness } from '@/lib/utils/product-publication';
 
 interface ProductFormProps {
   initialData?: AdminProduct;
@@ -57,6 +58,18 @@ export default function ProductForm({ initialData, categories, brands }: Product
     && !initialData.is_visible
   );
 
+  const publicationReadiness = validateProductPublicationReadiness({
+    category_id: categoryId,
+    brand_id: brandId,
+    primary_image_url: primaryImageUrl,
+    name,
+    slug,
+    short_description: shortDescription,
+    description,
+  });
+  const publicationIntent = reviewStatus === 'published' || isActive || isVisible || isFeatured;
+  const missingPublicationFields = formatMissingPublicationFields(publicationReadiness.missingFields);
+
   const checklist = useMemo(() => ([
     { label: 'Categoría / Familia', complete: Boolean(categoryId) },
     { label: 'Marca web', complete: Boolean(brandId) },
@@ -64,8 +77,8 @@ export default function ProductForm({ initialData, categories, brands }: Product
     { label: 'Descripción corta', complete: Boolean(shortDescription.trim()) },
     { label: 'Descripción larga', complete: Boolean(description.trim()) },
     { label: 'SEO', complete: Boolean(seoTitle.trim() && seoDescription.trim()) },
-    { label: 'Producto visible / publicado', complete: reviewStatus === 'published' && isActive && isVisible },
-  ]), [categoryId, brandId, primaryImageUrl, shortDescription, description, seoTitle, seoDescription, reviewStatus, isActive, isVisible]);
+    { label: 'Producto visible / publicado', complete: publicationReadiness.isReady && publicationIntent },
+  ]), [categoryId, brandId, primaryImageUrl, shortDescription, description, seoTitle, seoDescription, publicationReadiness.isReady, publicationIntent]);
 
   const completeCount = checklist.filter((item) => item.complete).length;
 
@@ -332,6 +345,22 @@ export default function ProductForm({ initialData, categories, brands }: Product
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Estado y publicación</h2>
             <p className="mt-1 text-sm text-amber-700">Publica solo cuando categoría, marca, imagen y contenido estén revisados.</p>
+
+            <div className={`mt-4 rounded-md border p-4 ${publicationReadiness.isReady ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+              <p className={`text-sm font-medium ${publicationReadiness.isReady ? 'text-green-800' : 'text-amber-800'}`}>
+                {publicationReadiness.isReady ? 'Este producto está listo para publicación.' : 'Este producto aún no está listo para publicación.'}
+              </p>
+              {!publicationReadiness.isReady && (
+                <p className="mt-1 text-sm text-amber-700">
+                  Falta: {missingPublicationFields}.
+                </p>
+              )}
+              {publicationIntent && !publicationReadiness.isReady && (
+                <p className="mt-2 text-sm font-semibold text-red-700">
+                  Si intentas dejarlo activo, visible o publicado ahora, el guardado será bloqueado.
+                </p>
+              )}
+            </div>
 
             <div className="mt-4 space-y-4">
               <div>

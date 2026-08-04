@@ -129,3 +129,8 @@ se muestra el aviso:
 1. Curar la primera muestra Bsale con este formulario.
 2. Reforzar publicación humana, no automática.
 3. Dejar la importación masiva de imágenes para fase posterior.
+
+## Ajuste 6D.5C
+
+- Se agregó la validación de publicación segura para bloquear `active/visible/published/featured` si faltan categoría, marca, imagen principal, nombre, slug o descripción.
+- El formulario ahora muestra un panel que diferencia borrador permitido de publicación bloqueada.

@@ -251,3 +251,13 @@ Subfase de edición guiada para revisar/completar los productos importados antes
 - **Imagen**: `primary_image_url` está soportada individualmente con preview; la carga masiva vendrá después.
 - **Publicación**: se mantiene manual y con advertencia visible; no se publica automáticamente.
 - **Reporte**: `docs/productos/REPORTE_FORMULARIO_NORMALIZACION_BSALE_6D5B.md`.
+
+### 6D.5C — Publicación segura de productos normalizados
+
+Subfase de protección de publicación: permite guardar borradores incompletos pero bloquea la publicación/visibilidad cuando faltan requisitos mínimos.
+
+- **Bloqueo de publicación insegura**: si el usuario intenta poner `is_active=true`, `is_visible=true`, `review_status='published'` o `is_featured=true`, se valida que existan categoría, marca, imagen principal, nombre, slug y descripción (corta o larga).
+- **Borrador permitido**: `draft` + `is_active=false` + `is_visible=false` + `is_featured=false` puede guardarse aunque esté incompleto.
+- **Implementación**: helper compartido `src/lib/utils/product-publication.ts`, Server Action `src/app/actions/admin-products.ts` y UI `src/components/admin/ProductForm.tsx`.
+- **SEO / precio / stock**: no son requisitos duros todavía; siguen fuera de esta fase.
+- **Reporte**: `docs/productos/REPORTE_PUBLICACION_SEGURA_PRODUCTOS_BSALE_6D5C.md`.
