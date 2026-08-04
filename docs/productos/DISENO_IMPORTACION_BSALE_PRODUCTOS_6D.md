@@ -219,3 +219,13 @@ Subfase SOLO lectura y diagnóstico; sin importar más productos, sin Bsale, sin
 - **Flujo futuro diseñado**: productos nuevos de Bsale siempre entran como borrador seguro; (A) sync automático programado + (B) botón admin "Sincronizar desde Bsale" — ambos con la misma lógica segura de 6D.4D (misma RPC, idempotencia, auditoría), sin publicación automática, sin sobrescribir contenido curado; (C) panel "Productos pendientes de curación" con filtros (sin categoría/marca/imagen, borrador, pendiente Bsale) y acciones futuras (categoría, marca, imagen, descripción, publicar).
 - **Imágenes**: fase futura separada (web actual/WordPress/cPanel); auditoría por SKU y por slug/nombre; no todos tendrán imagen; nunca mezclar con apply de productos base.
 - **Reporte**: `docs/productos/REPORTE_POST_APPLY_CURACION_BSALE_6D4E.md`.
+
+### 6D.5A — Normalización comercial de productos importados Bsale
+Esta subfase no importa más productos ni llama Bsale/apply: solo prepara la curación comercial en el listado actual de `/admin/productos`.
+- **Regla derivada**: `Pendiente de normalización = review_status='draft' AND is_active=false AND is_visible=false AND (category_id IS NULL OR brand_id IS NULL OR primary_image_url IS NULL OR falta descripción/SEO)`.
+- **UI admin**: badge `Pendiente de normalización`, badge `Nuevo Bsale`, filtros `Pendientes de normalización`, `Sin categoría`, `Sin marca`, `Sin imagen`, `Nuevos Bsale pendientes`, además de búsqueda/estado/categoría/marca existentes.
+- **Orden sugerido**: pendientes de normalización primero y, dentro de ellos, recién importados primero usando `created_at`.
+- **No publicación automática**: los nuevos productos Bsale siguen entrando como borrador seguro, inactivos y no visibles; el admin normaliza antes de publicar.
+- **Sync futuro**: el sync automático programado y el botón manual "Sincronizar desde Bsale" vendrán después y deberán dejar los productos en este mismo estado de normalización, nunca publicados automáticamente.
+- **Imágenes**: siguen siendo una fase separada posterior (auditar cobertura por SKU/slug/nombre; asociar desde la web actual/WordPress/cPanel sin mezclar con el apply base).
+- **Reporte**: `docs/productos/REPORTE_NORMALIZACION_PRODUCTOS_BSALE_6D5A.md`.

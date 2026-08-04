@@ -229,3 +229,13 @@ Subfase SOLO lectura y diseño; no importa más productos, no llama Bsale, no ej
   - C. Panel "Productos pendientes de curación": filtros sin categoría/marca/imagen, borrador, pendiente Bsale; acciones futuras asignar categoría/marca, cargar imagen, editar descripción, publicar.
 - **Imágenes**: fase futura separada; auditoría por SKU y por slug/nombre; productos sin imagen son esperados; nunca mezclar con apply base.
 - **Reporte**: `docs/productos/REPORTE_POST_APPLY_CURACION_BSALE_6D4E.md`.
+
+### 6D.5A — Normalización comercial de productos importados Bsale
+
+Subfase ya orientada a la operación del panel actual: no importa más productos ni llama Bsale/apply; solo ayuda a curar los productos importados antes de publicar.
+
+- **Regla derivada**: `Pendiente de normalización = review_status='draft' AND is_active=false AND is_visible=false AND (category_id IS NULL OR brand_id IS NULL OR primary_image_url IS NULL OR falta descripción/SEO)`.
+- **UI admin**: el listado `/admin/productos` muestra badge `Pendiente de normalización`, badge `Nuevo Bsale`, filtros `Pendientes de normalización`, `Sin categoría`, `Sin marca`, `Sin imagen`, `Nuevos Bsale pendientes`, y orden sugerido por pendientes primero y recién importados primero.
+- **Publicación**: no se publica automáticamente; el admin asigna categoría/familia web, marca, nombre comercial, y después en otra fase imagen/descripción/SEO antes de activar.
+- **Sync futuro**: el sync automático y el botón manual "Sincronizar desde Bsale" vendrán después y deberán dejar los productos en este mismo estado de normalización, nunca publicados por defecto.
+- **Imágenes**: siguen siendo fase separada (web actual/WordPress/cPanel) y no se mezclan con el apply base.

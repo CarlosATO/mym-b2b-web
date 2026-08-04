@@ -175,18 +175,33 @@ export async function getAdminProducts(
   companyId: string,
   params?: GetAdminProductsParams
 ): Promise<AdminProduct[]> {
+  const normalizeText = (value?: string | null) => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  };
+
+  const pageSize = typeof params?.page_size === 'number' && params.page_size > 0 ? params.page_size : 50;
+  const pageNumber = typeof params?.page_number === 'number' && params.page_number > 0 ? params.page_number : 1;
+
   const { data, error } = await supabase.rpc('web_b2b_admin_list_products', {
     p_target_company_id: companyId,
-    search_query: params?.search_query ?? null,
-    filter_review_status: params?.filter_review_status ?? null,
-    filter_category_id: params?.filter_category_id ?? null,
-    filter_brand_id: params?.filter_brand_id ?? null,
-    page_size: params?.page_size ?? 50,
-    page_number: params?.page_number ?? 1
+    search_query: normalizeText(params?.search_query),
+    filter_review_status: normalizeText(params?.filter_review_status),
+    filter_category_id: normalizeText(params?.filter_category_id),
+    filter_brand_id: normalizeText(params?.filter_brand_id),
+    page_size: pageSize,
+    page_number: pageNumber,
   });
 
   if (error) {
-    console.error('Error fetching admin products:', error);
+    console.error('Error fetching admin products:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      error: JSON.stringify(error, null, 2),
+    });
     throw error;
   }
 
@@ -247,4 +262,3 @@ export async function upsertAdminProduct(
 
   return data as string;
 }
-

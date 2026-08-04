@@ -1,10 +1,48 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { getAdminProducts } from '@/lib/api/admin-catalog';
+import { getAdminProducts, getAdminCategories, getAdminBrands, AdminProduct } from '@/lib/api/admin-catalog';
+import ProductFilters from '@/components/admin/ProductFilters';
 
 export const metadata = {
   title: 'Productos | Admin',
 };
+
+type NormalizationFilter = 'all' | 'pending_normalization' | 'no_category' | 'no_brand' | 'no_image' | 'new_bsale';
+
+function hasDescription(product: AdminProduct) {
+  return Boolean((product.short_description ?? '').trim() || (product.description ?? '').trim());
+}
+
+function hasSeo(product: AdminProduct) {
+  return Boolean((product.seo_title ?? '').trim() || (product.seo_description ?? '').trim());
+}
+
+function isPendingNormalization(product: AdminProduct) {
+  return product.review_status === 'draft'
+    && !product.is_active
+    && !product.is_visible
+    && (
+      !product.category_id
+      || !product.brand_id
+      || !product.primary_image_url
+      || !hasDescription(product)
+      || !hasSeo(product)
+    );
+}
+
+function isNewBsaleProduct(product: AdminProduct) {
+  return Boolean(
+    product.bsale_variant_id
+    && product.bsale_sync_status === 'pending'
+    && product.review_status === 'draft'
+    && !product.is_active
+    && !product.is_visible
+  );
+}
+
+function formatCount(value: number) {
+  return new Intl.NumberFormat('es-CL').format(value);
+}
 
 export default async function AdminProductsPage({
   searchParams,
@@ -19,24 +57,81 @@ export default async function AdminProductsPage({
   }
 
   const resolvedParams = await searchParams;
-  
-  const page = typeof resolvedParams.page === 'string' ? parseInt(resolvedParams.page, 10) : 1;
   const q = typeof resolvedParams.q === 'string' ? resolvedParams.q : undefined;
   const status = typeof resolvedParams.status === 'string' ? resolvedParams.status : undefined;
   const category = typeof resolvedParams.category === 'string' ? resolvedParams.category : undefined;
   const brand = typeof resolvedParams.brand === 'string' ? resolvedParams.brand : undefined;
+  const normalization = typeof resolvedParams.normalization === 'string'
+    ? resolvedParams.normalization as NormalizationFilter
+    : 'all';
 
-  const products = await getAdminProducts(supabase, companyId, {
-    search_query: q,
-    filter_review_status: status,
-    filter_category_id: category,
-    filter_brand_id: brand,
-    page_number: page,
-    page_size: 50,
-  });
+  const [products, categories, brands] = await Promise.all([
+    getAdminProducts(supabase, companyId, {
+      search_query: q,
+      filter_review_status: status,
+      filter_category_id: category,
+      filter_brand_id: brand,
+      page_number: 1,
+      page_size: 100,
+    }),
+    getAdminCategories(supabase, companyId),
+    getAdminBrands(supabase, companyId),
+  ]);
 
   const totalCount = products.length > 0 ? products[0].total_count : 0;
-  const totalPages = Math.ceil(totalCount / 50);
+  const enrichedProducts = products.map((product) => ({
+    ...product,
+    pendingNormalization: isPendingNormalization(product),
+    newBsale: isNewBsaleProduct(product),
+    missingImage: !product.primary_image_url,
+    missingCategory: !product.category_id,
+    missingBrand: !product.brand_id,
+  }));
+
+  const summaryCounts = {
+    pendingNormalization: enrichedProducts.filter((product) => product.pendingNormalization).length,
+    newBsale: enrichedProducts.filter((product) => product.newBsale).length,
+    noCategory: enrichedProducts.filter((product) => product.missingCategory).length,
+    noBrand: enrichedProducts.filter((product) => product.missingBrand).length,
+    noImage: enrichedProducts.filter((product) => product.missingImage).length,
+    visible: enrichedProducts.filter((product) => product.is_visible).length,
+  };
+
+  const filteredProducts = enrichedProducts
+    .filter((product) => {
+      switch (normalization) {
+        case 'pending_normalization':
+          return product.pendingNormalization;
+        case 'no_category':
+          return product.missingCategory;
+        case 'no_brand':
+          return product.missingBrand;
+        case 'no_image':
+          return product.missingImage;
+        case 'new_bsale':
+          return product.newBsale;
+        case 'all':
+        default:
+          return true;
+      }
+    })
+    .sort((a, b) => {
+      if (a.pendingNormalization !== b.pendingNormalization) {
+        return Number(b.pendingNormalization) - Number(a.pendingNormalization);
+      }
+
+      if (a.newBsale !== b.newBsale) {
+        return Number(b.newBsale) - Number(a.newBsale);
+      }
+
+      const createdDiff = Date.parse(b.created_at) - Date.parse(a.created_at);
+      if (createdDiff !== 0) return createdDiff;
+
+      const orderDiff = a.order_index - b.order_index;
+      if (orderDiff !== 0) return orderDiff;
+
+      return a.name.localeCompare(b.name, 'es');
+    });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -46,6 +141,22 @@ export default async function AdminProductsPage({
       case 'draft':
       default: return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Borrador</span>;
     }
+  };
+
+  const getNormalizationBadge = (product: (typeof filteredProducts)[number]) => {
+    if (product.pendingNormalization) {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Pendiente de normalización</span>;
+    }
+
+    return null;
+  };
+
+  const getNewBsaleBadge = (product: (typeof filteredProducts)[number]) => {
+    if (product.newBsale) {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">Nuevo Bsale</span>;
+    }
+
+    return null;
   };
 
   const getSyncBadge = (status: string) => {
@@ -63,7 +174,7 @@ export default async function AdminProductsPage({
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold text-slate-900 truncate">Productos Web</h1>
           <p className="text-sm text-slate-500 mt-1 break-words">
-            Los productos provienen de Bsale. En este panel se administra su presentación web: categoría, marca, descripción, imagen, visibilidad, destacado y SEO. Mostrando {totalCount} productos.
+            Los productos provienen de Bsale. Este panel los normaliza comercialmente antes de publicar. Mostrando {formatCount(totalCount)} productos.
           </p>
         </div>
         <Link
@@ -75,50 +186,60 @@ export default async function AdminProductsPage({
         </Link>
       </div>
 
-      <div className="bg-white shadow-sm border border-slate-200 rounded-lg overflow-hidden flex flex-col">
-        {/* Simple Filters Header */}
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-4 items-center">
-          <form className="flex flex-wrap gap-4 items-center w-full" method="GET" action="/admin/productos">
-            <input
-              type="text"
-              name="q"
-              defaultValue={q}
-              placeholder="Buscar por nombre o SKU..."
-              className="border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border flex-1 min-w-[200px]"
-            />
-            <select
-              name="status"
-              defaultValue={status || ''}
-              className="border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-            >
-              <option value="">Cualquier estado</option>
-              <option value="draft">Borrador</option>
-              <option value="ready">Listo</option>
-              <option value="published">Publicado</option>
-              <option value="hidden">Oculto</option>
-            </select>
-            <button
-              type="submit"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-slate-900 hover:bg-slate-800"
-            >
-              Filtrar
-            </button>
-            {(q || status || category || brand) && (
-              <Link href="/admin/productos" className="text-sm text-blue-600 hover:text-blue-900 ml-2">
-                Limpiar
-              </Link>
-            )}
-          </form>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-7">
+        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 shadow-sm">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Total</div>
+          <div className="mt-1 text-lg font-semibold leading-none text-slate-900">{formatCount(totalCount)}</div>
         </div>
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 shadow-sm">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-amber-700">Pend. normalización</div>
+          <div className="mt-1 text-lg font-semibold leading-none text-amber-900">{formatCount(summaryCounts.pendingNormalization)}</div>
+        </div>
+        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 shadow-sm">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Nuevos Bsale</div>
+          <div className="mt-1 text-lg font-semibold leading-none text-slate-900">{formatCount(summaryCounts.newBsale)}</div>
+        </div>
+        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 shadow-sm">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Sin categoría</div>
+          <div className="mt-1 text-lg font-semibold leading-none text-slate-900">{formatCount(summaryCounts.noCategory)}</div>
+        </div>
+        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 shadow-sm">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Sin marca</div>
+          <div className="mt-1 text-lg font-semibold leading-none text-slate-900">{formatCount(summaryCounts.noBrand)}</div>
+        </div>
+        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 shadow-sm">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Sin imagen</div>
+          <div className="mt-1 text-lg font-semibold leading-none text-slate-900">{formatCount(summaryCounts.noImage)}</div>
+        </div>
+        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 shadow-sm">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Visibles</div>
+          <div className="mt-1 text-lg font-semibold leading-none text-slate-900">{formatCount(summaryCounts.visible)}</div>
+        </div>
+      </div>
 
-        {totalCount === 0 ? (
+      <ProductFilters
+        key={`${q ?? ''}|${status ?? ''}|${category ?? ''}|${brand ?? ''}|${normalization}`}
+        q={q}
+        status={status}
+        category={category}
+        brand={brand}
+        normalization={normalization}
+        categories={categories}
+        brands={brands}
+      />
+      <p className="-mt-3 text-[11px] text-slate-500">
+        Vista actual: {formatCount(filteredProducts.length)} productos.
+      </p>
+
+      <div className="bg-white shadow-sm border border-slate-200 rounded-lg overflow-hidden flex flex-col">
+        {filteredProducts.length === 0 ? (
           <div className="p-12 text-center">
             <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
             <h3 className="mt-2 text-sm font-medium text-slate-900">No hay productos</h3>
             <p className="mt-1 text-sm text-slate-500 max-w-lg mx-auto">
-              Aún no hay productos cargados en el catálogo web. La carga principal vendrá desde Bsale y luego se complementará con imágenes/descripciones web.
+              No hay productos para esta combinación de filtros. Los importados desde Bsale siguen en borrador hasta su normalización comercial.
             </p>
           </div>
         ) : (
@@ -134,14 +255,14 @@ export default async function AdminProductsPage({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <tr key={product.id} className="hover:bg-slate-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
                           {product.primary_image_url ? (
-                            <div 
-                              className="h-10 w-10 bg-contain bg-no-repeat bg-center rounded-md border border-slate-200" 
+                            <div
+                              className="h-10 w-10 bg-contain bg-no-repeat bg-center rounded-md border border-slate-200"
                               style={{ backgroundImage: `url(${product.primary_image_url})` }}
                               aria-label={`Imagen de ${product.name}`}
                             />
@@ -154,6 +275,10 @@ export default async function AdminProductsPage({
                         <div className="ml-4">
                           <div className="text-sm font-medium text-slate-900">{product.name}</div>
                           <div className="text-sm text-slate-500">SKU: {product.sku}</div>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {getNormalizationBadge(product)}
+                            {getNewBsaleBadge(product)}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -172,24 +297,33 @@ export default async function AdminProductsPage({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col gap-1 items-start">
                         {getStatusBadge(product.review_status)}
-                        <div className="flex gap-1 mt-1">
+                        <div className="flex gap-1 mt-1 flex-wrap">
+                          {!product.category_id && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">Sin categoría</span>
+                          )}
+                          {!product.brand_id && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">Sin marca</span>
+                          )}
+                          {!product.primary_image_url && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">Sin imagen</span>
+                          )}
                           {product.is_active ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800">Activo</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800">Activo</span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800">Inactivo</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800">Inactivo</span>
                           )}
                           {product.is_visible && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800">Visible</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800">Visible</span>
                           )}
                           {product.is_featured && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800">Destacado</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800">Destacado</span>
                           )}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link 
-                        href={`/admin/productos/${product.id}/editar`} 
+                      <Link
+                        href={`/admin/productos/${product.id}/editar`}
                         className="text-blue-600 hover:text-blue-900"
                       >
                         Editar
@@ -199,35 +333,6 @@ export default async function AdminProductsPage({
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-        
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-slate-200 sm:px-6">
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-slate-700">
-                  Mostrando página <span className="font-medium">{page}</span> de <span className="font-medium">{totalPages}</span>
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <Link
-                    href={`/admin/productos?page=${page > 1 ? page - 1 : 1}${q ? `&q=${q}` : ''}${status ? `&status=${status}` : ''}`}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium ${page <= 1 ? 'text-slate-300 pointer-events-none' : 'text-slate-500 hover:bg-slate-50'}`}
-                  >
-                    Anterior
-                  </Link>
-                  <Link
-                    href={`/admin/productos?page=${page < totalPages ? page + 1 : totalPages}${q ? `&q=${q}` : ''}${status ? `&status=${status}` : ''}`}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium ${page >= totalPages ? 'text-slate-300 pointer-events-none' : 'text-slate-500 hover:bg-slate-50'}`}
-                  >
-                    Siguiente
-                  </Link>
-                </nav>
-              </div>
-            </div>
           </div>
         )}
       </div>
