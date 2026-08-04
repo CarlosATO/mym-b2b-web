@@ -252,5 +252,7 @@ Subfase de protección de publicación: permite guardar borradores incompletos p
 Subfase de diseño (sin implementación) para carga local desde computador e importación/asociación desde URL con Storage propio.
 - **Estado actual**: `primary_image_url` ya se usa como interfaz de imagen principal; no hay upload real ni bucket todavía.
 - **Dirección recomendada**: bucket `product-images` y copia a Storage para no depender de WordPress/cPanel.
+- **Estado validado**: `product-images` ya fue creado manualmente, quedó público, con límite de 5 MB y MIME types `image/jpeg`, `image/png`, `image/webp`.
+- **Seguridad**: la lectura queda pública; escritura/reemplazo/borrado quedan controlados por policies.
 - **Flujos futuros**: carga local, importación por URL, migración inicial desde la web actual, y luego curación de imágenes de productos ya normalizados.
 - **Reporte**: `docs/productos/DISENO_IMAGENES_PRODUCTOS_BSALE_6D5D.md`.

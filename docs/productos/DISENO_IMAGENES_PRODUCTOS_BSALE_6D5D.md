@@ -31,6 +31,14 @@ Esta fase es solo diseño. No implementa subida, bucket, SQL ni mutaciones.
 - Políticas de acceso/servicio para imágenes.
 - Migración de imágenes desde la web actual / WordPress / cPanel.
 
+### Estado validado ahora
+
+- El bucket `product-images` ya existe en Supabase.
+- Está configurado como público.
+- Tiene límite de 5 MB.
+- Acepta `image/jpeg`, `image/png` y `image/webp`.
+- La seguridad de escritura/borrado queda en policies, no en lectura.
+
 ## Diseño de carga local
 
 ### UX propuesta
@@ -74,6 +82,8 @@ Esta fase es solo diseño. No implementa subida, bucket, SQL ni mutaciones.
 ### Recomendación
 
 La opción recomendada para producción es **copiar a Storage** y no depender permanentemente de WordPress/cPanel.
+
+El bucket ya quedó público para servir imágenes de catálogo sin signed URLs.
 
 ## Migración inicial desde la web actual
 
@@ -120,6 +130,6 @@ La opción recomendada para producción es **copiar a Storage** y no depender pe
 
 ## Próximas fases recomendadas
 
-- **6D.5E**: carga individual desde computador.
+- **6D.5E-B**: carga individual desde computador.
 - **6D.5F**: curar 1 producto real con imagen definitiva.
 - **6D.6**: migración masiva desde la web actual.
