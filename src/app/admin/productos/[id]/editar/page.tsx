@@ -37,7 +37,7 @@ export default async function EditAdminProductPage({
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Editar Producto</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Actualiza la información de {product.name}
+          Normaliza la información comercial de {product.name} antes de publicar.
         </p>
       </div>
 

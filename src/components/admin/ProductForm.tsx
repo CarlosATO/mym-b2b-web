@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminProduct, AdminCategory, AdminBrand } from '@/lib/api/admin-catalog';
 import { saveAdminProduct } from '@/app/actions/admin-products';
@@ -11,39 +11,63 @@ interface ProductFormProps {
   brands: AdminBrand[];
 }
 
+function createSlug(text: string) {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+}
+
+function ChecklistPill({ complete }: { complete: boolean }) {
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${complete ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+      {complete ? 'Completo' : 'Pendiente'}
+    </span>
+  );
+}
+
 export default function ProductForm({ initialData, categories, brands }: ProductFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // States to handle client-side slug generation if it's new
+
   const [name, setName] = useState(initialData?.name || '');
   const [slug, setSlug] = useState(initialData?.slug || '');
   const [slugEdited, setSlugEdited] = useState(!!initialData?.slug);
-  
+  const [shortDescription, setShortDescription] = useState(initialData?.short_description || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [categoryId, setCategoryId] = useState(initialData?.category_id || '');
+  const [brandId, setBrandId] = useState(initialData?.brand_id || '');
   const [primaryImageUrl, setPrimaryImageUrl] = useState(initialData?.primary_image_url || '');
+  const [seoTitle, setSeoTitle] = useState(initialData?.seo_title || '');
+  const [seoDescription, setSeoDescription] = useState(initialData?.seo_description || '');
+  const [reviewStatus, setReviewStatus] = useState(initialData?.review_status || 'draft');
+  const [isActive, setIsActive] = useState(initialData?.is_active ?? false);
+  const [isVisible, setIsVisible] = useState(initialData?.is_visible ?? false);
+  const [isFeatured, setIsFeatured] = useState(initialData?.is_featured ?? false);
+  const [orderIndex, setOrderIndex] = useState(String(initialData?.order_index ?? 0));
 
-  const generateSlug = (text: string) => {
-    return text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '');
-  };
+  const isNewBsale = Boolean(
+    initialData?.bsale_variant_id
+    && initialData.bsale_sync_status === 'pending'
+    && initialData.review_status === 'draft'
+    && !initialData.is_active
+    && !initialData.is_visible
+  );
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newName = e.target.value;
-    setName(newName);
-    if (!slugEdited) {
-      setSlug(generateSlug(newName));
-    }
-  };
+  const checklist = useMemo(() => ([
+    { label: 'Categoría / Familia', complete: Boolean(categoryId) },
+    { label: 'Marca web', complete: Boolean(brandId) },
+    { label: 'Imagen principal', complete: Boolean(primaryImageUrl.trim()) },
+    { label: 'Descripción corta', complete: Boolean(shortDescription.trim()) },
+    { label: 'Descripción larga', complete: Boolean(description.trim()) },
+    { label: 'SEO', complete: Boolean(seoTitle.trim() && seoDescription.trim()) },
+    { label: 'Producto visible / publicado', complete: reviewStatus === 'published' && isActive && isVisible },
+  ]), [categoryId, brandId, primaryImageUrl, shortDescription, description, seoTitle, seoDescription, reviewStatus, isActive, isVisible]);
 
-  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSlug(e.target.value);
-    setSlugEdited(true);
-  };
+  const completeCount = checklist.filter((item) => item.complete).length;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -55,69 +79,104 @@ export default function ProductForm({ initialData, categories, brands }: Product
 
     if (result.success) {
       router.push('/admin/productos');
-    } else {
-      setError(result.error || 'Ocurrió un error al guardar');
-      setIsSubmitting(false);
+      return;
     }
+
+    setError(result.error || 'Ocurrió un error al guardar');
+    setIsSubmitting(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="mx-auto max-w-6xl space-y-5">
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
-      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-        <div className="flex">
-          <div className="ml-3">
-            <p className="text-sm text-blue-700 font-medium">
-              Este producto está preparado para integrarse con Bsale. Precios y stock se sincronizarán en fases posteriores; no se editan desde esta pantalla.
-            </p>
-          </div>
-        </div>
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <p className="max-w-4xl text-sm leading-6 text-blue-700 font-medium">
+          Este producto proviene de Bsale. La identidad operacional no debe editarse desde la web. Precios y stock siguen fuera de esta pantalla.
+        </p>
+        {isNewBsale && (
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-blue-800 font-semibold">
+            Producto recién importado desde Bsale. Debe normalizarse antes de publicarlo.
+          </p>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-2 space-y-6">
-          {/* Identificación / SKU */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h2 className="text-lg font-medium text-slate-900 mb-4">Identificación (Bsale) y Presentación Web</h2>
-            
-            <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <div className="space-y-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">Identidad Bsale</h2>
+            <p className="mt-1 text-sm text-slate-500">Solo lectura. Esta identidad no debe editarse desde la web.</p>
+
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label htmlFor="sku" className="block text-sm font-medium text-slate-700">SKU (Código único Bsale) *</label>
+                <label htmlFor="sku" className="block text-sm font-medium text-slate-700">SKU</label>
                 <input
                   type="text"
                   name="sku"
                   id="sku"
-                  required
                   readOnly={!!initialData}
                   defaultValue={initialData?.sku}
-                  className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm px-3 py-2 border ${initialData ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'}`}
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm ${initialData ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500' : 'border-slate-300 focus:border-blue-500 focus:ring-blue-500'}`}
                 />
               </div>
-
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-700">Nombre del Producto *</label>
+                <label htmlFor="bsale_variant_id" className="block text-sm font-medium text-slate-700">Bsale Variant ID</label>
+                <input
+                  type="text"
+                  name="bsale_variant_id"
+                  id="bsale_variant_id"
+                  readOnly={!!initialData?.bsale_variant_id}
+                  defaultValue={initialData?.bsale_variant_id || ''}
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm ${initialData?.bsale_variant_id ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500' : 'border-slate-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                />
+              </div>
+              <div>
+                <div className="block text-sm font-medium text-slate-700">Estado sync Bsale</div>
+                <div className="mt-1 inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                  {initialData?.bsale_sync_status || 'pending'}
+                </div>
+                <input type="hidden" name="bsale_sync_status" value={initialData?.bsale_sync_status || 'pending'} />
+              </div>
+              <div>
+                <div className="block text-sm font-medium text-slate-700">Sincronización Bsale</div>
+                <div className={`mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${initialData?.bsale_sync_enabled ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'}`}>
+                  {initialData?.bsale_sync_enabled ? 'habilitada' : 'deshabilitada'}
+                </div>
+                {initialData?.bsale_sync_enabled && <input type="hidden" name="bsale_sync_enabled" value="on" />}
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">Normalización comercial</h2>
+            <p className="mt-1 text-sm text-slate-500">Categoría/Familia define dónde aparecerá el producto en la web. Marca ayuda a filtrar y ordenar comercialmente.</p>
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-slate-700">Nombre comercial</label>
                 <input
                   type="text"
                   name="name"
                   id="name"
                   required
                   value={name}
-                  onChange={handleNameChange}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    setName(newName);
+                    if (!slugEdited) {
+                      setSlug(createSlug(newName));
+                    }
+                  }}
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label htmlFor="slug" className="block text-sm font-medium text-slate-700">Slug (URL amigable) *</label>
+                <label htmlFor="slug" className="block text-sm font-medium text-slate-700">Slug</label>
                 <input
                   type="text"
                   name="slug"
@@ -126,104 +185,163 @@ export default function ProductForm({ initialData, categories, brands }: Product
                   pattern="^[a-z0-9-]+$"
                   title="Solo minúsculas, números y guiones"
                   value={slug}
-                  onChange={handleSlugChange}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                  onChange={(e) => {
+                    setSlug(e.target.value);
+                    setSlugEdited(true);
+                  }}
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
                 <p className="mt-1 text-xs text-slate-500">Solo minúsculas, números y guiones.</p>
               </div>
 
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label htmlFor="category_id" className="block text-sm font-medium text-slate-700">Categoría / Familia web</label>
+                  <select
+                    name="category_id"
+                    id="category_id"
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">Ninguna</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="brand_id" className="block text-sm font-medium text-slate-700">Marca web</label>
+                  <select
+                    name="brand_id"
+                    id="brand_id"
+                    value={brandId}
+                    onChange={(e) => setBrandId(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">Ninguna</option>
+                    {brands.map((brand) => (
+                      <option key={brand.id} value={brand.id}>{brand.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div>
-                <label htmlFor="short_description" className="block text-sm font-medium text-slate-700">Descripción Corta</label>
+                <label htmlFor="short_description" className="block text-sm font-medium text-slate-700">Descripción corta</label>
                 <textarea
                   name="short_description"
                   id="short_description"
-                  rows={2}
-                  defaultValue={initialData?.short_description || ''}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                  rows={3}
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-slate-700">Descripción Completa</label>
+                <label htmlFor="description" className="block text-sm font-medium text-slate-700">Descripción larga</label>
                 <textarea
                   name="description"
                   id="description"
-                  rows={5}
-                  defaultValue={initialData?.description || ''}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                  rows={6}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Vínculo Bsale */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h2 className="text-lg font-medium text-slate-900 mb-4">Vínculo con Bsale</h2>
-            <div className="space-y-4">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">Imagen principal</h2>
+            <p className="mt-1 text-sm text-slate-500">Imagen individual ya soportada. La importación masiva desde la web actual vendrá después.</p>
+
+            <div className="mt-4 space-y-4">
+              {primaryImageUrl ? (
+                <div className="h-56 w-full rounded border border-slate-200 bg-center bg-contain bg-no-repeat" style={{ backgroundImage: `url(${primaryImageUrl})` }} />
+              ) : (
+                <div className="flex h-56 w-full items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-400">
+                  Sin imagen principal
+                </div>
+              )}
+
               <div>
-                <label htmlFor="bsale_variant_id" className="block text-sm font-medium text-slate-700">Variante ID (Bsale)</label>
+                <label htmlFor="primary_image_url" className="block text-sm font-medium text-slate-700">URL imagen principal</label>
+                <input
+                  type="url"
+                  name="primary_image_url"
+                  id="primary_image_url"
+                  value={primaryImageUrl}
+                  onChange={(e) => setPrimaryImageUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">SEO</h2>
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <label htmlFor="seo_title" className="block text-sm font-medium text-slate-700">SEO title</label>
                 <input
                   type="text"
-                  name="bsale_variant_id"
-                  id="bsale_variant_id"
-                  readOnly={!!initialData?.bsale_variant_id}
-                  defaultValue={initialData?.bsale_variant_id || ''}
-                  className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm px-3 py-2 border ${initialData?.bsale_variant_id ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500 bg-slate-50'}`}
+                  name="seo_title"
+                  id="seo_title"
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
-                <p className="mt-1 text-xs text-slate-500">
-                  {initialData?.bsale_variant_id ? 'Vínculo establecido de forma automatizada.' : 'ID interno de la variante en Bsale.'}
-                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="bsale_sync_status" className="block text-sm font-medium text-slate-700">Estado de Sincronización</label>
-                  <select
-                    name="bsale_sync_status"
-                    id="bsale_sync_status"
-                    defaultValue={initialData?.bsale_sync_status || 'pending'}
-                    className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-                  >
-                    <option value="pending">Pendiente</option>
-                    <option value="synced">Sincronizado</option>
-                    <option value="error">Error</option>
-                  </select>
-                </div>
-                
-                <div className="flex items-center pt-6">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="bsale_sync_enabled"
-                      name="bsale_sync_enabled"
-                      type="checkbox"
-                      defaultChecked={initialData?.bsale_sync_enabled ?? false}
-                      className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 rounded"
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="bsale_sync_enabled" className="font-medium text-slate-700">Habilitar sincronización</label>
-                  </div>
-                </div>
+              <div>
+                <label htmlFor="seo_description" className="block text-sm font-medium text-slate-700">SEO description</label>
+                <textarea
+                  name="seo_description"
+                  id="seo_description"
+                  rows={3}
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
               </div>
             </div>
-          </div>
+          </section>
         </div>
 
-        {/* Sidebar del formulario */}
-        <div className="space-y-6">
-          
-          {/* Publicación y Estado */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h2 className="text-lg font-medium text-slate-900 mb-4">Publicación</h2>
-            
-            <div className="space-y-4">
+        <div className="space-y-5 xl:sticky xl:top-6 xl:self-start">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-slate-900">Checklist de normalización</h2>
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">{completeCount}/{checklist.length}</span>
+            </div>
+            <div className="mt-4 space-y-2">
+              {checklist.map((item) => (
+                <div key={item.label} className="flex items-center justify-between gap-3 rounded-md border border-slate-100 bg-slate-50 px-3 py-2">
+                  <span className="text-sm text-slate-700">{item.label}</span>
+                  <ChecklistPill complete={item.complete} />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">Estado y publicación</h2>
+            <p className="mt-1 text-sm text-amber-700">Publica solo cuando categoría, marca, imagen y contenido estén revisados.</p>
+
+            <div className="mt-4 space-y-4">
               <div>
                 <label htmlFor="review_status" className="block text-sm font-medium text-slate-700">Estado del contenido</label>
                 <select
                   name="review_status"
                   id="review_status"
-                  defaultValue={initialData?.review_status || 'draft'}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                  value={reviewStatus}
+                  onChange={(e) => setReviewStatus(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="draft">Borrador</option>
                   <option value="ready">Listo para publicar</option>
@@ -232,181 +350,83 @@ export default function ProductForm({ initialData, categories, brands }: Product
                 </select>
               </div>
 
-              <div className="pt-2 space-y-3">
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="is_active"
-                      name="is_active"
-                      type="checkbox"
-                      defaultChecked={initialData?.is_active ?? false}
-                      className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 rounded"
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="is_active" className="font-medium text-slate-700">Activo (habilitado en catálogo)</label>
-                  </div>
-                </div>
+              <div className="space-y-3 pt-1">
+                <label className="flex items-start gap-3 text-sm">
+                  <input
+                    id="is_active"
+                    name="is_active"
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>
+                    <span className="font-medium text-slate-700">Activo</span>
+                    <span className="block text-slate-500">Habilitado en catálogo.</span>
+                  </span>
+                </label>
 
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="is_visible"
-                      name="is_visible"
-                      type="checkbox"
-                      defaultChecked={initialData?.is_visible ?? false}
-                      className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 rounded"
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="is_visible" className="font-medium text-slate-700">Visible en tienda</label>
-                  </div>
-                </div>
+                <label className="flex items-start gap-3 text-sm">
+                  <input
+                    id="is_visible"
+                    name="is_visible"
+                    type="checkbox"
+                    checked={isVisible}
+                    onChange={(e) => setIsVisible(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>
+                    <span className="font-medium text-slate-700">Visible en tienda</span>
+                    <span className="block text-slate-500">Se expone en catálogo público.</span>
+                  </span>
+                </label>
 
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="is_featured"
-                      name="is_featured"
-                      type="checkbox"
-                      defaultChecked={initialData?.is_featured ?? false}
-                      className="focus:ring-blue-500 h-4 w-4 text-purple-600 border-slate-300 rounded"
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="is_featured" className="font-medium text-slate-700">Destacado</label>
-                  </div>
-                </div>
+                <label className="flex items-start gap-3 text-sm">
+                  <input
+                    id="is_featured"
+                    name="is_featured"
+                    type="checkbox"
+                    checked={isFeatured}
+                    onChange={(e) => setIsFeatured(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-blue-500"
+                  />
+                  <span>
+                    <span className="font-medium text-slate-700">Destacado</span>
+                    <span className="block text-slate-500">Solo para productos curados.</span>
+                  </span>
+                </label>
               </div>
-              
-              <div className="pt-2">
-                <label htmlFor="order_index" className="block text-sm font-medium text-slate-700">Índice de Orden</label>
+
+              <div>
+                <label htmlFor="order_index" className="block text-sm font-medium text-slate-700">Índice de orden</label>
                 <input
                   type="number"
                   name="order_index"
                   id="order_index"
-                  defaultValue={initialData?.order_index || 0}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                  value={orderIndex}
+                  onChange={(e) => setOrderIndex(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
-          </div>
-
-          {/* Clasificación */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h2 className="text-lg font-medium text-slate-900 mb-4">Clasificación</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="category_id" className="block text-sm font-medium text-slate-700">Categoría Web</label>
-                <select
-                  name="category_id"
-                  id="category_id"
-                  defaultValue={initialData?.category_id || ''}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-                >
-                  <option value="">Ninguna</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="brand_id" className="block text-sm font-medium text-slate-700">Marca Web</label>
-                <select
-                  name="brand_id"
-                  id="brand_id"
-                  defaultValue={initialData?.brand_id || ''}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-                >
-                  <option value="">Ninguna</option>
-                  {brands.map((brand) => (
-                    <option key={brand.id} value={brand.id}>{brand.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Imagen Principal */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h2 className="text-lg font-medium text-slate-900 mb-4">Imagen Principal</h2>
-            
-            <div className="space-y-4">
-              {primaryImageUrl ? (
-                <div 
-                  className="h-48 w-full bg-contain bg-no-repeat bg-center rounded border border-slate-200"
-                  style={{ backgroundImage: `url(${primaryImageUrl})` }}
-                />
-              ) : (
-                <div className="h-48 w-full bg-slate-50 border-2 border-dashed border-slate-300 rounded flex items-center justify-center">
-                  <span className="text-slate-400 text-sm">Sin imagen</span>
-                </div>
-              )}
-              
-              <div>
-                <label htmlFor="primary_image_url" className="block text-sm font-medium text-slate-700">URL Temporal de Imagen</label>
-                <input
-                  type="url"
-                  name="primary_image_url"
-                  id="primary_image_url"
-                  value={primaryImageUrl}
-                  onChange={(e) => setPrimaryImageUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-                />
-                <p className="mt-1 text-xs text-slate-500">Carga de imágenes directo a Storage pendiente (Fase 6D).</p>
-              </div>
-            </div>
-          </div>
-
-          {/* SEO */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h2 className="text-lg font-medium text-slate-900 mb-4">SEO</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="seo_title" className="block text-sm font-medium text-slate-700">Título SEO</label>
-                <input
-                  type="text"
-                  name="seo_title"
-                  id="seo_title"
-                  defaultValue={initialData?.seo_title || ''}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="seo_description" className="block text-sm font-medium text-slate-700">Descripción SEO</label>
-                <textarea
-                  name="seo_description"
-                  id="seo_description"
-                  rows={3}
-                  defaultValue={initialData?.seo_description || ''}
-                  className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-                />
-              </div>
-            </div>
-          </div>
-
+          </section>
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 pt-6 border-t border-slate-200">
+      <div className="flex justify-end gap-4 border-t border-slate-200 pt-5">
         <button
           type="button"
           onClick={() => router.push('/admin/productos')}
-          className="px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
+          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:opacity-50"
+          className="inline-flex justify-center rounded-md border border-transparent bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
         >
-          {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+          {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
         </button>
       </div>
     </form>

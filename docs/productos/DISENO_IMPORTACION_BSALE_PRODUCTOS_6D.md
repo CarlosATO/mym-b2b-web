@@ -229,3 +229,13 @@ Esta subfase no importa más productos ni llama Bsale/apply: solo prepara la cur
 - **Sync futuro**: el sync automático programado y el botón manual "Sincronizar desde Bsale" vendrán después y deberán dejar los productos en este mismo estado de normalización, nunca publicados automáticamente.
 - **Imágenes**: siguen siendo una fase separada posterior (auditar cobertura por SKU/slug/nombre; asociar desde la web actual/WordPress/cPanel sin mezclar con el apply base).
 - **Reporte**: `docs/productos/REPORTE_NORMALIZACION_PRODUCTOS_BSALE_6D5A.md`.
+
+### 6D.5B — Formulario de edición para normalización comercial
+Subfase de edición guiada para curar los productos importados antes de publicar; sin Bsale, sin apply, sin precios/stock, sin publicación automática.
+- **Formulario reorganizado**: secciones claras para Identidad Bsale (solo lectura), Normalización comercial, Imagen principal, SEO, Checklist de normalización y Estado/publicación.
+- **Campos editables**: nombre comercial, slug, categoría/familia web, marca web, descripción corta, descripción larga, imagen principal individual por URL, SEO title, SEO description, review_status, is_active, is_visible, is_featured y order_index.
+- **Campos read-only**: SKU, Bsale Variant ID, estado sync Bsale y sincronización Bsale.
+- **Checklist**: muestra `Completo/Pendiente` para categoría, marca, imagen principal, descripción corta, descripción larga, SEO y publicación.
+- **Imagen individual**: `primary_image_url` sigue soportada y se muestra preview; la importación masiva de imágenes desde la web actual queda para fase posterior separada.
+- **Advertencia de publicación**: publicar solo cuando categoría, marca, imagen y contenido estén revisados manualmente.
+- **Reporte**: `docs/productos/REPORTE_FORMULARIO_NORMALIZACION_BSALE_6D5B.md`.
