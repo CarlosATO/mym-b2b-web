@@ -214,3 +214,18 @@ Subfase de ejecución real: la RPC de apply se ejecuta UNA sola vez, sin ROLLBAC
 - **No exposición pública**: las RPCs de catálogo público muestran solo los productos visibles preexistentes; los 20 nuevos no aparecen.
 - **DEMO/TEST**: DEMO-001/002/003 y TEST-UI-001 intactos y sin modificar.
 - **Reporte**: `docs/productos/REPORTE_PRIMER_APPLY_BSALE_6D4D_B.md`.
+
+### 6D.4E — Revisión post-apply y curación comercial (diagnóstico)
+
+Subfase SOLO lectura y diseño; no importa más productos, no llama Bsale, no ejecuta apply, no toca precios/stock/imágenes.
+
+- **Revisión del apply**: 20/20 productos del apply_run `9a209048-b2fe-4ee4-af42-b5bf3901442c` presentes en `web_b2b.products`; 0 inseguros; 0 visibles públicamente; 0 con precio/stock/imagen.
+- **Diagnóstico de curación**: 20/20 sin categoría, sin marca, sin imagen, sin descripción y sin SEO → 0 listos para revisión comercial, 20 requieren curación manual. Después del primer apply NO se recomienda importar masivamente todavía; primero curar la muestra.
+- **DEMO/TEST**: DEMO-001/002/003 (activos/visibles en catálogo público) y TEST-UI-001 (oculto) siguen intactos. Estrategia: mantener durante desarrollo; antes de publicación real limpiarlos con script/SQL controlado o dejarlos fuera de producción; nunca mezclarlos con productos Bsale.
+- **Flujo futuro de productos nuevos desde Bsale** (diseñado, no implementado):
+  - Entrada siempre como borrador seguro: `draft`, `is_active=false`, `is_visible=false`, `is_featured=false`, `bsale_sync_status='pending'`, sin publicación automática.
+  - A. Sync automático programado: corre en cron, detecta variantes nuevas, importa como borrador, registra auditoría, no publica, no toca imágenes, no sobrescribe contenido curado.
+  - B. Botón admin "Sincronizar desde Bsale": solo admin autorizado, dispara el MISMO proceso, sin publicación automática, sin productos manuales aislados.
+  - C. Panel "Productos pendientes de curación": filtros sin categoría/marca/imagen, borrador, pendiente Bsale; acciones futuras asignar categoría/marca, cargar imagen, editar descripción, publicar.
+- **Imágenes**: fase futura separada; auditoría por SKU y por slug/nombre; productos sin imagen son esperados; nunca mezclar con apply base.
+- **Reporte**: `docs/productos/REPORTE_POST_APPLY_CURACION_BSALE_6D4E.md`.

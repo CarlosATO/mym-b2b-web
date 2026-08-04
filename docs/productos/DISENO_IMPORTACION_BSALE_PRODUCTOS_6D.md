@@ -210,3 +210,12 @@ Subfase de ejecución real: primer apply de la RPC `public.web_b2b_system_apply_
 - **No exposición pública**: catálogo público (RPCs) sigue mostrando únicamente los productos visibles preexistentes; los 20 nuevos no aparecen.
 - **DEMO/TEST**: DEMO-001/002/003 y TEST-UI-001 intactos y sin modificar (decisión: no limpiar en esta fase).
 - **Reporte**: `docs/productos/REPORTE_PRIMER_APPLY_BSALE_6D4D_B.md`.
+
+### 6D.4E — Revisión post-apply y curación comercial (diagnóstico)
+Subfase SOLO lectura y diagnóstico; sin importar más productos, sin Bsale, sin apply, sin tocar precios/stock/imágenes.
+- **Revisión del apply**: 20/20 productos del apply_run `9a209048-b2fe-4ee4-af42-b5bf3901442c` existen en `web_b2b.products`, 0 inseguros, 0 visibles, 0 con precio/stock/imagen.
+- **Diagnóstico**: 20/20 sin categoría, sin marca, sin imagen, sin descripción, sin SEO → 0 listos para revisión, 20 requieren curación manual. No importar masivamente todavía; curar la muestra primero.
+- **DEMO/TEST**: intactos. Hallazgo: DEMO-001/002/003 están `is_visible=true` y aparecen en catálogo público (son los 3 visibles); TEST-UI-001 oculto. Estrategia: mantener en desarrollo, limpiar/ocultar controladamente antes de publicación real, nunca mezclar con productos Bsale.
+- **Flujo futuro diseñado**: productos nuevos de Bsale siempre entran como borrador seguro; (A) sync automático programado + (B) botón admin "Sincronizar desde Bsale" — ambos con la misma lógica segura de 6D.4D (misma RPC, idempotencia, auditoría), sin publicación automática, sin sobrescribir contenido curado; (C) panel "Productos pendientes de curación" con filtros (sin categoría/marca/imagen, borrador, pendiente Bsale) y acciones futuras (categoría, marca, imagen, descripción, publicar).
+- **Imágenes**: fase futura separada (web actual/WordPress/cPanel); auditoría por SKU y por slug/nombre; no todos tendrán imagen; nunca mezclar con apply de productos base.
+- **Reporte**: `docs/productos/REPORTE_POST_APPLY_CURACION_BSALE_6D4E.md`.
