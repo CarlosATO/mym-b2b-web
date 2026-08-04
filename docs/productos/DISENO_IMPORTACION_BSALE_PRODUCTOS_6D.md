@@ -191,3 +191,11 @@ Esta subfase es SOLO prueba técnica; nada se persiste. Se ejecuta la migración
 - **Corrección aplicada**: prefijos `p_` en parámetros de la RPC (colisión de nombre `import_run_id` entre parámetro y columna — error 42702 detectado en ejecución). Aplicada en la candidata y el borrador 6D.4B quedó alineado con la misma corrección para evitar divergencia documental.
 - **Prueba rollback**: ver `docs/productos/REPORTE_ROLLBACK_APPLY_BSALE_6D4C.md`. Run usado: `22e1d487-36e6-4475-a0e0-a28d0305dbcc`. Se habrían creado 20 productos seguros; tras ROLLBACK la DB volvió al estado inicial (4 productos, sin apply_runs/apply_items/funciones).
 - **Siguiente fase**: 6D.4D (primer apply real ≤ 20 productos, tras revisión visual del run elegido y decisión DEMO/TEST).
+
+### 6D.4D-A — Aplicación real de estructura apply controlado (sin ejecutar apply)
+Esta subfase instala la estructura en Supabase real; la RPC de apply NO se llama y NO se crean productos.
+- **Aplicación**: `supabase/migrations/20260804120000_web_b2b_controlled_bsale_product_apply.sql` ejecutada con `npx supabase db query --linked --file ...` (sin db push/db pull/migration repair).
+- **Validado**: tablas apply_runs/apply_items con RLS activo y 0 policies; REVOKE a public/anon/authenticated y GRANT EXECUTE solo service_role en RPC y helper; ambas funciones SECURITY DEFINER con `search_path=''`; constraints (UNIQUEs, FK compuesta import_item/run/company, checks max_items/status/source/mode/action) y `uq_import_items_id_run_company` sobre import_items.
+- **Sin efectos de datos**: products 4→4; product_prices 0, product_stock 0, product_images 3 sin cambios; apply_runs/apply_items = 0.
+- **Reporte**: `docs/productos/REPORTE_APLICACION_ESTRUCTURA_APPLY_BSALE_6D4D_A.md`.
+- **Siguiente fase**: 6D.4D (primer apply real ≤ 20 productos).
