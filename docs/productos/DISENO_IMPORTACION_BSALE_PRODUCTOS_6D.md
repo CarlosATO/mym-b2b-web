@@ -179,3 +179,8 @@ Esta subfase es SOLO diseño; no se implementa ni ejecuta apply.
 - **Rollback conceptual**: nunca borrado automático; ante fallos marcar inactivo/no visible; limpieza por SQL/script controlado con IDs exactos.
 - **DEMO/TEST**: DEMO-001..003 y TEST-UI-001 se mantienen; antes del apply real decidir entre mantener inactivos, limpiar controlado o excluirlos por SKU.
 - **Siguiente fases**: 6D.4B (migración/RPC borrador sin ejecutar), 6D.4C (dry-run técnico con transacción rollback), 6D.4D (primer apply real ≤ 20 productos).
+
+### 6D.4B — Borrador SQL/RPC de apply controlado
+Esta subfase es SOLO borrador/revisión técnica; no se ejecuta SQL ni se crean productos.
+- **Borrador local**: `docs/productos/borrador_apply_control_6d4b.sql` (aún no migración formal) con tablas `web_b2b.bsale_product_apply_runs` y `bsale_product_apply_items`, helper `web_b2b.generate_unique_product_slug_for_import` y RPC futura `public.web_b2b_system_apply_bsale_product_import_run`.
+- **Detalles**: ver `docs/productos/DISENO_PRIMER_APPLY_BSALE_6D4A.md` (sección 6D.4B). Aplica máximo 20 items de un run `dry_run`/`success` revisado; productos en estado seguro (`draft`, inactivo, no visible, `bsale_sync_status='pending'`); idempotencia por UNIQUE(company_id, import_run_id); transacción atómica con rollback total; sin precios/stock/imágenes.

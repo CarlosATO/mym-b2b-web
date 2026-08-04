@@ -39,6 +39,8 @@ Antes de insertar cada producto:
 - `item.payload.dry_run = true` (el payload persistido debe marcar dry_run).
 - El run pertenece al `company_id`.
 - El run no ha sido aplicado antes (idempotencia, ver sección 4).
+- Si no hay candidatos válidos para aplicar, el apply aborta con excepción controlada (sin apply_run vacío).
+- Duplicados detectados (SKU o `bsale_variant_id` ya existentes en `web_b2b.products` para el company) → `apply_item` registrado como `conflict`; nunca producto inseguro.
 
 ## 4. Idempotencia y bloqueo (diseño)
 
@@ -80,7 +82,7 @@ Características requeridas:
 - No acepta secretos
 - No toca precios/stock/imágenes
 - Inserta únicamente en `web_b2b.products` y tablas de control/auditoría de apply
-- Valida `max_items <= 20` en esta primera fase (rechazo controlado si se supera)
+- Valida `max_items <= 20` en esta primera fase (rechazo controlado si se supera); `COALESCE(max_items, 20)` como default efectivo
 - Ejecuta el criterio de selección de la sección 2 y las validaciones de la sección 3 dentro de la transacción
 
 ## 6. Mapping exacto a web_b2b.products
@@ -163,3 +165,18 @@ Productos actuales: DEMO-001, DEMO-002, DEMO-003, TEST-UI-001 (4 registros en `w
 - **6D.4B**: crear migración + RPC de apply controlado (borrador SQL en repositorio, sin ejecutar) + tablas de apply_runs/apply_items.
 - **6D.4C**: dry-run técnico del apply con transacción y ROLLBACK (verificar selección, mappings, idempotencia) sin persistir productos.
 - **6D.4D**: primer apply real con máximo 20 productos, tras revisión visual del run elegido y limpieza/decisión DEMO/TEST.
+
+### 6D.4B — Borrador SQL/RPC apply controlado
+
+Subfase de revisión técnica: borrador SQL local, sin ejecutar.
+
+- **Archivo**: `docs/productos/borrador_apply_control_6d4b.sql` (aún NO es migración formal; se convierte en `supabase/migrations/...` solo tras aprobación en 6D.4C).
+- **Tablas propuestas**:
+  - `web_b2b.bsale_product_apply_runs`: cabecera de cada apply (company_id, import_run_id, source, mode='controlled_apply', status running/success/failed/partial/cancelled, max_items 1..20, contadores ≥ 0, summary, error_message, timestamps). Checks source IN ('script','system','admin'), UNIQUE(company_id, import_run_id), FK compuesta a import_runs(id, company_id). RLS habilitada sin policies; REVOKE a public/anon/authenticated.
+  - `web_b2b.bsale_product_apply_items`: detalle por item (apply_run_id, company_id, import_run_id, import_item_id, product_id, sku, bsale_variant_id, action create/skip/conflict/error, status success/skipped/conflict/error, message). FK compuesta a apply_runs, FK compuesta a import_items(id, run_id, company_id) — previa adición de UNIQUE(id, run_id, company_id) sobre la tabla existente vía DO block —, FK a products(id) ON DELETE SET NULL, UNIQUE(company_id, import_item_id). RLS restrictiva. apply_items registra únicamente los candidatos intentados por el apply; los import_items no elegibles permanecen en la auditoría dry-run.
+- **Helper de slug**: `web_b2b.generate_unique_product_slug_for_import(p_company_id, p_name, p_sku)` — minúsculas, normalización de acentos/ñ/ç con `translate` (sin unaccent ni extensiones nuevas), no alfanuméricos → guiones, colapsa repetidos, fallback a sku, sufijo `-2`, `-3`… ante colisión, límite defensivo 100 intentos, sin SQL dinámico, SECURITY DEFINER, `SET search_path=''`, REVOKE a public/anon/authenticated y GRANT solo service_role.
+- **RPC futura**: `public.web_b2b_system_apply_bsale_product_import_run(target_company_id, import_run_id, max_items DEFAULT 20)` — SECURITY DEFINER, `SET search_path=''`, sin auth.uid()/check_admin_access()/SQL dinámico/secretos, GRANT solo service_role, `max_items` entre 1 y 20 con `COALESCE(max_items, 20)` (variable `v_max_items` usada en apply_runs y LIMIT). Inserta únicamente en `web_b2b.products`, `apply_runs` y `apply_items`.
+- **Validaciones del apply**: run existe y pertenece a la compañía; `mode='dry_run'`; `status='success'`; sin apply previo (idempotencia); sin candidatos válidos → excepción controlada sin apply_run vacío; selección de items `create`/`pending`/sin conflict_type con sku, bsale_variant_id y source_name no nulos y `payload->>'dry_run'='true'`, limitado a `max_items`; validación de SKU y bsale_variant_id inexistentes en products; slug único. Duplicados detectados (SKU o bsale_variant_id ya existentes) → apply_item `conflict`/`conflict` (nunca producto inseguro, nunca skip).
+- **Datos insertados**: draft, is_active=false, is_visible=false, is_featured=false, bsale_sync_enabled=true, bsale_sync_status='pending' (aún sin sincronización operativa), bsale_last_checked_at=null (vínculo inicial desde la auditoría; coherencia con 'pending'), sin precios/stock/imágenes.
+- **Errores/rollback**: transacción atómica; fallo → RAISE EXCEPTION → rollback total (sin productos ni apply_run persistidos); `failed` persistido queda para observabilidad futura.
+- **DEMO/TEST**: nota en el borrador — DEMO-001..003 y TEST-UI-001 se revisan antes del primer apply real; en 6D.4B no se limpian.
