@@ -274,3 +274,11 @@ Mejora de interfaz para categorías y selector de productos sin cambiar la base 
 - **Selector de padre**: también muestra rutas jerárquicas.
 - **Reporte**: `docs/productos/REPORTE_CATEGORIAS_JERARQUICAS_6D5F_A.md`.
 - **Estado**: implementado y validado con `npm run lint` y `npm run build`.
+
+### 6D.5F-B — Curación manual de BRACCO y cierre operativo
+Revisión manual en admin del producto `BRACCO TRAVEL TRANSPORTADORA Nº3`.
+- **Producto**: `a38ed49d-cb1a-4b36-8254-132050ba069e` / SKU `10.123`.
+- **Validación real**: quedó con categoría hija `Accesorios > Transportadoras`, marca `BRACCO`, descripción completa y miniatura en admin.
+- **Estado final**: sigue en borrador, inactivo, no visible y no destacado.
+- **Estado público**: sigue sin aparecer en `/catalogo`.
+- **Reporte**: `docs/productos/REPORTE_CURACION_PRODUCTO_BRACCO_6D5F_B.md`.

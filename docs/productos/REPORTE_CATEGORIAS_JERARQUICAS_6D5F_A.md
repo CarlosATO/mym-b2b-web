@@ -35,6 +35,11 @@ Mostrar la estructura real de categorías y subcategorías de forma clara, sin c
 - Si la categoría principal tiene subcategorías, publicar exige una subcategoría específica.
 - `category_id` final sigue representando la clasificación elegida del producto.
 
+## Notas operativas
+
+- El ajuste de puerto local queda fuera de esta fase.
+- La curación manual de BRACCO se valida por separado en la fase 6D.5F-B.
+
 ## Pendiente
 
 - Si se requieren más niveles profundos, el helper ya soporta árbol recursivo.

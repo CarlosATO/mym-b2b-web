@@ -84,8 +84,8 @@ Verificación de estado inseguro: **0 filas** fuera del estado seguro sobre los 
 
 ## Revisión visual admin
 
-- App levantada en `http://localhost:3001` (dev server, PID 13210): `/` 200, `/catalogo` 200, `/admin/productos` 307 (redirige a login, requiere auth).
-- Revisión visual en `http://localhost:3001/admin/productos` queda a cargo del usuario en navegador: deben verse 24 productos totales (20 nuevos como borrador, inactivos/no publicados, sin imagen, sin precio, sin stock) y el catálogo público sin los nuevos.
+- App levantada en `http://localhost:3000` (dev server, PID 13210): `/` 200, `/catalogo` 200, `/admin/productos` 307 (redirige a login, requiere auth).
+- Revisión visual en `http://localhost:3000/admin/productos` queda a cargo del usuario en navegador: deben verse 24 productos totales (20 nuevos como borrador, inactivos/no publicados, sin imagen, sin precio, sin stock) y el catálogo público sin los nuevos.
 - No se creó/edió nada desde la UI; no se cambiaron estados.
 
 ## Riesgos / Remanentes
