@@ -201,3 +201,16 @@ Subfase de instalación estructural: se aplica la migración en Supabase real y 
 - **Sin efectos de datos**: `web_b2b.products` 4→4; product_prices 0, product_stock 0, product_images 3 sin cambios; apply_runs 0 y apply_items 0.
 - **Reporte**: `docs/productos/REPORTE_APLICACION_ESTRUCTURA_APPLY_BSALE_6D4D_A.md`.
 - **Siguiente**: 6D.4D (primer apply real ≤ 20 productos) tras decisión DEMO/TEST.
+
+### 6D.4D-B — Primer apply real controlado (ejecutado)
+
+Subfase de ejecución real: la RPC de apply se ejecuta UNA sola vez, sin ROLLBACK (persistente), con máx 20 productos y verificación inmediata de estado seguro. Sin Bsale; sin precios/stock/imágenes; DEMO/TEST intactos (decisión: no limpiar).
+
+- **Prevalidaciones (todas PASS antes de llamar la RPC)**: conteos base (products 4, prices 0, stock 0, images 3, apply_runs 0, apply_items 0); run `22e1d487-36e6-4475-a0e0-a28d0305dbcc` con company_id correcto, mode `dry_run`, status `success`; sin apply previo (idempotencia); 20 candidatos `create`/`pending`/sin conflict_type con sku/bsale_variant_id/source_name y `payload->>'dry_run'='true'`; 0 colisiones de SKU y 0 de bsale_variant_id contra `web_b2b.products`.
+- **Ejecución única**: `SELECT public.web_b2b_system_apply_bsale_product_import_run('d1000000-0000-0000-0000-000000000001'::uuid, '22e1d487-36e6-4475-a0e0-a28d0305dbcc'::uuid, 20)` → `apply_run_id = 9a209048-b2fe-4ee4-af42-b5bf3901442c` (persistido).
+- **Resultado**: apply_run `success`, max_items 20, total_candidates 20, total_created 20, total_skipped 0, total_conflicts 0, total_errors 0; summary `{created_safe_state: draft/inactive/not_visible, dry_run_applied: true, no_images: true, no_prices: true, no_stock: true}`; 20 apply_items `create`/`success` completos (import_item_id, product_id, sku, bsale_variant_id, message).
+- **Productos creados**: 20 en estado seguro (draft, inactivo, no visible, no featured, `bsale_sync_enabled=true`, `bsale_sync_status='pending'`, `bsale_last_checked_at=NULL`, sin categoría/marca/descripciones/SEO).
+- **Conteos post**: products 4→24; apply_runs 0→1; apply_items 0→20; prices 0, stock 0, images 3 sin cambios.
+- **No exposición pública**: las RPCs de catálogo público muestran solo los productos visibles preexistentes; los 20 nuevos no aparecen.
+- **DEMO/TEST**: DEMO-001/002/003 y TEST-UI-001 intactos y sin modificar.
+- **Reporte**: `docs/productos/REPORTE_PRIMER_APPLY_BSALE_6D4D_B.md`.
