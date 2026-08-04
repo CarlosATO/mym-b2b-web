@@ -261,3 +261,12 @@ Subfase de protección de publicación: permite guardar borradores incompletos p
 - **Implementación**: helper compartido `src/lib/utils/product-publication.ts`, Server Action `src/app/actions/admin-products.ts` y UI `src/components/admin/ProductForm.tsx`.
 - **SEO / precio / stock**: no son requisitos duros todavía; siguen fuera de esta fase.
 - **Reporte**: `docs/productos/REPORTE_PUBLICACION_SEGURA_PRODUCTOS_BSALE_6D5C.md`.
+
+### 6D.5D — Gestión de imágenes de productos
+
+Subfase de diseño (sin implementación) para cargar imágenes desde computador o asociarlas desde URL.
+
+- **Estado actual**: `primary_image_url` ya funciona como interfaz de imagen principal; aún no existe upload real.
+- **Dirección recomendada**: Storage propio (`product-images`) y copia definitiva de URLs externas a Storage.
+- **Migración futura**: auditoría de imágenes desde la web actual / WordPress / cPanel, match por SKU/slug/nombre y curación manual de casos dudosos.
+- **Reporte**: `docs/productos/DISENO_IMAGENES_PRODUCTOS_BSALE_6D5D.md`.
