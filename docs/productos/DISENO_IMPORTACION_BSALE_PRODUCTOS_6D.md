@@ -282,3 +282,11 @@ Revisión manual en admin del producto `BRACCO TRAVEL TRANSPORTADORA Nº3`.
 - **Estado final**: sigue en borrador, inactivo, no visible y no destacado.
 - **Estado público**: sigue sin aparecer en `/catalogo`.
 - **Reporte**: `docs/productos/REPORTE_CURACION_PRODUCTO_BRACCO_6D5F_B.md`.
+
+### 6D.5G — Importación de imagen desde URL a Storage
+Flujo server-side para copiar una imagen externa a `product-images` sin depender de WordPress/cPanel.
+- **Arquitectura**: componente cliente `src/components/admin/ProductImageUpload.tsx` + Server Action `src/app/actions/admin-product-images.ts`.
+- **Validación**: URL http/https, bloqueo de destinos locales/privados, MIME JPG/PNG/WEBP, máximo 5 MB.
+- **Ruta**: `product-images/company_id/product_id/uuid.ext`.
+- **Persistencia**: el preview se actualiza solo cuando el Server Action devuelve un `publicUrl` de Storage; luego el admin guarda para mantener el flujo actual.
+- **Reporte**: `docs/productos/REPORTE_IMPORTACION_IMAGEN_URL_6D5G.md`.

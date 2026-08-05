@@ -40,6 +40,7 @@
 - [x] Fase 6D.5E-B: Carga individual de imágenes desde computador. Implementada en `ProductForm` con upload a `product-images` y validada por Carlos con el producto `BRACCO TRAVEL TRANSPORTADORA Nº3`; la imagen quedó en Storage, `primary_image_url` se actualizó y el producto siguió borrador/inactivo/no visible. Reporte `docs/productos/REPORTE_UPLOAD_INDIVIDUAL_IMAGEN_BSALE_6D5E_B.md`.
 - [x] Fase 6D.5F-A: Visualización jerárquica de categorías. La UI muestra padre/subcategoría con rutas como `Accesorios > Transportadoras` sin cambiar `parent_id` ni el schema. Reporte `docs/productos/REPORTE_CATEGORIAS_JERARQUICAS_6D5F_A.md`.
 - [x] Fase 6D.5F-B: Curación manual de BRACCO y cierre operativo. Producto curado desde admin con categoría hija, marca, descripción e imagen; sigue en borrador/inactivo/no visible/no destacado y no aparece en catálogo. Reporte `docs/productos/REPORTE_CURACION_PRODUCTO_BRACCO_6D5F_B.md`.
+- [x] Fase 6D.5G: Importación de imagen desde URL a Storage. Flujo corregido en server-side para copiar una imagen externa a `product-images`; la re-prueba real se validó con `PELUCHE DE GATO MOUNSTRUOS SURTIDOS` y dejó `primary_image_url` persistida en Storage y BD. Reporte `docs/productos/REPORTE_IMPORTACION_IMAGEN_URL_6D5G.md`.
 - [ ] Fase 6D.5: Curación comercial de la muestra (categorías, marcas, descripciones/SEO) y diseño de sync recurrente Bsale.
 - [ ] Fase 6D: Integrar Storage seguro de imágenes.
 - [ ] Fase 7: Importación WooCommerce/cPanel + cruce Bsale (solo revisión, no crear en Bsale).

@@ -48,3 +48,4 @@ Registrar la curación manual de BRACCO y dejar constancia de su estado operativ
 - Curación ampliada por lotes desde Bsale.
 - Publicación controlada posterior cuando la ficha esté completa.
 - Puerto local ya quedó en `3000`.
+- La importación desde URL quedó implementada para otros productos; BRACCO no se usará como prueba.

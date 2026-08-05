@@ -1,7 +1,9 @@
 'use client';
 
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useActionState, useEffect, useRef, useState, useTransition, type ChangeEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { importProductImageFromUrlAction, type ImportProductImageFromUrlState } from '@/app/actions/admin-product-images';
+import { buildProductImageObjectPath, getProductImageExtension } from '@/lib/utils/product-image-storage';
 
 interface ProductImageUploadProps {
   companyId: string;
@@ -12,19 +14,7 @@ interface ProductImageUploadProps {
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
-
-function getFileExtension(mimeType: string) {
-  switch (mimeType) {
-    case 'image/jpeg':
-      return 'jpg';
-    case 'image/png':
-      return 'png';
-    case 'image/webp':
-      return 'webp';
-    default:
-      return null;
-  }
-}
+const initialImportState: ImportProductImageFromUrlState = { success: false };
 
 function getUploadError(file: File) {
   if (!ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])) {
@@ -57,16 +47,20 @@ function formatStorageError(error: unknown) {
   return message;
 }
 
-function getRandomFileName(ext: string) {
-  const randomId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  return `${randomId}.${ext}`;
-}
-
 export default function ProductImageUpload({ companyId, productId, value, onChange }: ProductImageUploadProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [importState, importFormAction] = useActionState(importProductImageFromUrlAction, initialImportState);
+  const [isImportPending, startImportTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [importUrl, setImportUrl] = useState('');
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (importState.success && importState.publicUrl) {
+      onChange(importState.publicUrl);
+    }
+  }, [importState, onChange]);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -75,31 +69,34 @@ export default function ProductImageUpload({ companyId, productId, value, onChan
       return;
     }
 
-    setMessage(null);
-    setError(null);
+    setUploadMessage(null);
+    setUploadError(null);
 
     const validationError = getUploadError(file);
     if (validationError) {
-      setError(validationError);
+      setUploadError(validationError);
       event.target.value = '';
       return;
     }
 
-    const ext = getFileExtension(file.type);
+    const ext = getProductImageExtension(file.type);
     if (!ext) {
-      setError('No se pudo determinar la extensión del archivo.');
+      setUploadError('No se pudo determinar la extensión del archivo.');
       event.target.value = '';
       return;
     }
 
     if (!companyId || !productId) {
-      setError('Falta contexto del producto para subir la imagen.');
+      setUploadError('Falta contexto del producto para subir la imagen.');
       event.target.value = '';
       return;
     }
 
-    const fileName = getRandomFileName(ext);
-    const objectPath = `${companyId}/${productId}/${fileName}`;
+    const objectPath = buildProductImageObjectPath({
+      companyId,
+      productId,
+      extension: ext,
+    });
     const supabase = createClient();
 
     setIsUploading(true);
@@ -125,9 +122,9 @@ export default function ProductImageUpload({ companyId, productId, value, onChan
       }
 
       onChange(publicUrl);
-      setMessage('Imagen subida correctamente. Recuerda guardar los cambios del producto.');
+      setUploadMessage('Imagen subida correctamente. Recuerda guardar los cambios del producto.');
     } catch (uploadError: unknown) {
-      setError(formatStorageError(uploadError));
+      setUploadError(formatStorageError(uploadError));
     } finally {
       setIsUploading(false);
       event.target.value = '';
@@ -135,7 +132,11 @@ export default function ProductImageUpload({ companyId, productId, value, onChan
   };
 
   return (
-    <div className="space-y-4">
+    <>
+      <input type="hidden" name="company_id" value={companyId} />
+      <input type="hidden" name="product_id" value={productId} />
+
+      <div className="space-y-4">
       {value ? (
         <div className="h-56 w-full rounded border border-slate-200 bg-center bg-contain bg-no-repeat" style={{ backgroundImage: `url(${value})` }} />
       ) : (
@@ -151,11 +152,11 @@ export default function ProductImageUpload({ companyId, productId, value, onChan
           name="primary_image_url"
           id="primary_image_url"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="https://..."
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          readOnly
+          placeholder="Se completará al importar"
+          className="mt-1 block w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm shadow-sm"
         />
-      </div>
+        </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <button
@@ -169,6 +170,40 @@ export default function ProductImageUpload({ companyId, productId, value, onChan
         <span className="text-xs text-slate-500">Formatos permitidos: JPG, PNG, WEBP. Máximo 5 MB.</span>
       </div>
 
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <div>
+          <label htmlFor="import_image_url" className="block text-sm font-medium text-slate-700">Importar imagen desde URL</label>
+          <p className="mt-1 text-xs text-slate-500">La imagen se copiará a Storage propio. No dependeremos de la URL original.</p>
+        </div>
+        <input
+          type="url"
+          id="import_image_url"
+          value={importUrl}
+          onChange={(e) => setImportUrl(e.target.value)}
+          placeholder="https://..."
+          className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const formData = new FormData();
+            formData.set('company_id', companyId);
+            formData.set('product_id', productId);
+            formData.set('primary_image_url', importUrl.trim());
+
+            setUploadMessage(null);
+            setUploadError(null);
+            startImportTransition(() => {
+              void importFormAction(formData);
+            });
+          }}
+          disabled={isImportPending || isUploading || !importUrl.trim()}
+          className="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isImportPending ? 'Importando...' : 'Importar imagen'}
+        </button>
+      </div>
+
       <input
         ref={inputRef}
         type="file"
@@ -177,8 +212,11 @@ export default function ProductImageUpload({ companyId, productId, value, onChan
         onChange={handleFileChange}
       />
 
-      {message && <p className="text-sm font-medium text-green-700">{message}</p>}
-      {error && <p className="text-sm font-medium text-red-700">{error}</p>}
-    </div>
+      {uploadMessage && <p className="text-sm font-medium text-green-700">{uploadMessage}</p>}
+      {uploadError && <p className="text-sm font-medium text-red-700">{uploadError}</p>}
+      {importState.success && importState.message && <p className="text-sm font-medium text-green-700">{importState.message}</p>}
+      {!importState.success && importState.error && <p className="text-sm font-medium text-red-700">{importState.error}</p>}
+      </div>
+    </>
   );
 }

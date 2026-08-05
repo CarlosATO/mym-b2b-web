@@ -47,6 +47,13 @@ Esta fase es solo diseño. No implementa subida, bucket, SQL ni mutaciones.
 - El producto sigue guardándose solo cuando el usuario presiona `Guardar cambios`.
 - La fase fue probada por Carlos con `BRACCO TRAVEL TRANSPORTADORA Nº3` y la miniatura apareció en `/admin/productos`.
 
+### Estado de importación por URL
+
+- La fase 6D.5G agrega importación server-side desde una URL externa.
+- La URL solo funciona como fuente temporal; la imagen se copia a Storage propio.
+- El admin sigue viendo preview y debe guardar para persistir el producto.
+- La prueba de SAFARI no dejó persistencia en `primary_image_url` ni en `product-images`; se requiere repetirla con confirmación de guardado.
+
 ## Diseño de carga local
 
 ### UX propuesta
@@ -140,5 +147,6 @@ El bucket ya quedó público para servir imágenes de catálogo sin signed URLs.
 
 - **6D.5E-B**: carga individual desde computador, ya implementada; pendiente prueba real.
 - **6D.5E-B**: carga individual desde computador, ya implementada y validada.
+- **6D.5G**: importación individual desde URL a Storage, implementada; pendiente prueba controlada.
 - **6D.5F**: curar 1 producto real con imagen definitiva.
 - **6D.6**: migración masiva desde la web actual.
