@@ -35,7 +35,10 @@ Se definen tres niveles de confianza para relacionar el catálogo web actual con
 
 - **Match Alto**: 
   - El SKU exportado coincide exactamente con el `sku` en `web_b2b.products`.
-  - **Acción**: `import_auto_candidate`. Seguro para ser importado automáticamente.
+  - **Acción**: `import_auto_candidate` solo cuando la imagen viene directa en la fila del producto/variación coincidente.
+- **Match Alto Heredado**:
+  - El SKU exportado coincide exactamente con el `sku` en `web_b2b.products`, pero la imagen se obtiene desde el producto padre de WooCommerce.
+  - **Acción**: candidato de alta confianza para revisión visual/importación controlada. No se importa automáticamente de forma ciega, porque la imagen heredada puede mostrar un peso o formato distinto al producto B2B.
 - **Match Medio**: 
   - No hay SKU, pero el nombre del producto es extremadamente similar (ej. > 85% similitud de tokens).
   - **Acción**: `review_required`. Se listará en el reporte para aprobación manual del administrador.
@@ -46,6 +49,7 @@ Se definen tres niveles de confianza para relacionar el catálogo web actual con
 **Reglas Estrictas de Migración:**
 - Nunca reemplazar una imagen existente (`primary_image_url != null`) sin confirmación explícita.
 - Nunca publicar un producto automáticamente solo por haber recibido una imagen.
+- Nunca tratar una imagen heredada desde padre como equivalente automático sin revisión visual previa.
 - Todas las imágenes serán alojadas en Supabase Storage (`product-images`).
 
 ## 4. Diseño del Reporte Dry-Run
@@ -80,4 +84,5 @@ Basado en la lectura actual del sistema (`web_b2b_system_list_products_for_impor
 ## 6. Siguientes Pasos (Para Fase Posterior)
 - El usuario provee la fuente de datos (idealmente CSV WooCommerce).
 - Se ejecuta un script real (`node scripts/audit-web-product-images.mjs`) que lee el CSV y ejecuta la validación cruzada para generar el reporte de auditoría.
-- Tras la aprobación humana de `review_required`, se procede con la fase de ingesta y carga en Storage.
+- Tras la aprobación humana de `review_required` y de los candidatos heredados desde padre, se procede con la fase de ingesta y carga en Storage.
+  - **Fase 6D.6B**: Validado dry-run real. Ver: docs/productos/REPORTE_DRY_RUN_CSV_WOOCOMMERCE_6D6B.md

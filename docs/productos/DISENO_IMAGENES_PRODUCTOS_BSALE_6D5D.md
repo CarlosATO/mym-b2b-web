@@ -151,3 +151,4 @@ El bucket ya quedó público para servir imágenes de catálogo sin signed URLs.
 - **6D.5F**: curar 1 producto real con imagen definitiva.
 - **6D.6**: migración masiva desde la web actual.
 - **6D.6A**: Auditoría de imágenes desde la web actual (diseño y dry-run para preparar la migración masiva controlada).
+  - **Fase 6D.6B**: Validado dry-run real. Ver: docs/productos/REPORTE_DRY_RUN_CSV_WOOCOMMERCE_6D6B.md

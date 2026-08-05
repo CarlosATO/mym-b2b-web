@@ -294,3 +294,4 @@ Flujo server-side para copiar una imagen externa a `product-images` sin depender
 ### Fase 6D.6A - Auditoría de Imágenes desde Web Actual
 - Fase de diseño y dry-run para evaluar y catalogar las imágenes de la web actual (p. ej., export WooCommerce).
 - Su objetivo es hacer matching confiable por SKU para importar masivamente imágenes válidas hacia `product-images` sin reemplazar imágenes existentes.
+  - **Fase 6D.6B**: Validado dry-run real. Resultado corregido: 1 candidato directo apto para importación automática futura, 6 candidatos heredados desde padre aptos para revisión visual/importación controlada, 2 bloqueados por imagen existente y 15 ignorados. No se reemplazan imágenes existentes y no se publica nada automáticamente. Ver: docs/productos/REPORTE_DRY_RUN_CSV_WOOCOMMERCE_6D6B.md
