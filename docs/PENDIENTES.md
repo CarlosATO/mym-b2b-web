@@ -69,4 +69,5 @@
 - [ ] Mantener archivos modulares y evitar archivos sobre 1000 líneas.
 - [x] Fase 6D.6A: Auditoría de imágenes desde web actual (dry-run/diseño). Diseño para futura migración masiva de imágenes desde WooCommerce hacia Supabase Storage. Reporte `docs/productos/DISENO_AUDITORIA_IMAGENES_WEB_ACTUAL_6D6A.md`.
 - [x] Fase 6D.6B: Dry-run real con CSV WooCommerce (Match y reporte sin mutaciones). Métrica final corregida: 1 candidato directo apto para importación automática futura, 6 candidatos heredados desde padre aptos para revisión visual/importación controlada, 2 bloqueados por imagen existente y 15 ignorados. Reporte `docs/productos/REPORTE_DRY_RUN_CSV_WOOCOMMERCE_6D6B.md`.
+- [x] Fase 6D.6B-FIX: Build sin dependencia externa de Google Fonts. Se eliminó `next/font/google` y `@import` remoto de Inter; la app usa stack de sistema y `npm run build` ya no requiere descargar fuentes. Reporte `docs/productos/REPORTE_BUILD_SIN_GOOGLE_FONTS_6D6B_FIX.md`.
 - [ ] Fase 6D.6C: Desarrollo e importación real controlada de imágenes desde CSV, separando importación automática del candidato directo y revisión visual previa para candidatos heredados desde padre.
