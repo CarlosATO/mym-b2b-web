@@ -290,3 +290,7 @@ Flujo server-side para copiar una imagen externa a `product-images` sin depender
 - **Ruta**: `product-images/company_id/product_id/uuid.ext`.
 - **Persistencia**: el preview se actualiza solo cuando el Server Action devuelve un `publicUrl` de Storage; luego el admin guarda para mantener el flujo actual.
 - **Reporte**: `docs/productos/REPORTE_IMPORTACION_IMAGEN_URL_6D5G.md`.
+
+### Fase 6D.6A - Auditoría de Imágenes desde Web Actual
+- Fase de diseño y dry-run para evaluar y catalogar las imágenes de la web actual (p. ej., export WooCommerce).
+- Su objetivo es hacer matching confiable por SKU para importar masivamente imágenes válidas hacia `product-images` sin reemplazar imágenes existentes.
