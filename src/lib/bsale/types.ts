@@ -27,3 +27,59 @@ export interface BsaleStock {
   quantity: number;
   // Podría incluir desglose por sucursal
 }
+
+export interface BsalePriceListDetailItem {
+  id?: number | string;
+  variantValue?: number | string | null;
+  variantValueWithTaxes?: number | string | null;
+  variant?: {
+    id?: number | string | null;
+    href?: string | null;
+  } | null;
+}
+
+export interface BsalePriceListDetailsResponse {
+  count?: number | null;
+  items?: BsalePriceListDetailItem[];
+}
+
+export interface BsaleStockItem {
+  id?: number | string;
+  quantity?: number | string | null;
+  quantityAvailable?: number | string | null;
+  variant?: {
+    id?: number | string | null;
+    href?: string | null;
+  } | null;
+  office?: {
+    id?: number | string | null;
+    href?: string | null;
+  } | null;
+}
+
+export interface BsaleStockResponse {
+  count?: number | null;
+  items?: BsaleStockItem[];
+}
+
+export type BsaleCommercialAvailabilityStatus = 'consult' | 'available' | 'out_of_stock';
+
+export interface B2BPriceReadResult {
+  status: 'ok' | 'not_found' | 'error';
+  priceWithTaxes: number | null;
+  priceNet: number | null;
+  currency: 'CLP';
+  priceListId: number;
+  source: 'bsale_lp_comerciante';
+  confidence: 'high';
+  errorMessage?: string;
+}
+
+export interface B2BStockReadResult {
+  status: 'ok' | 'not_found' | 'error';
+  quantityAvailableInternal: number;
+  availabilityStatus: BsaleCommercialAvailabilityStatus;
+  source: 'bsale_stock';
+  confidence: 'high';
+  errorMessage?: string;
+}
